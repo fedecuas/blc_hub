@@ -1,0 +1,11 @@
+// Temporary marker to add create project button in Projects page
+// Find the header section and add:
+// <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+//   Crear Proyecto
+// </button>
+//
+// And at the end of the return statement, before closing:
+// <CreateProjectModal 
+//   isOpen={isCreateModalOpen} 
+//   onClose={() => setIsCreateModalOpen(false)} 
+// />

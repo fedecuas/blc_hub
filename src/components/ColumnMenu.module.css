@@ -1,0 +1,86 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9998;
+}
+
+.menu {
+    position: fixed;
+    z-index: 9999;
+    background: hsl(var(--bg-primary));
+    border: 1px solid hsla(var(--text-primary) / 0.1);
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    min-width: 260px;
+    overflow: hidden;
+}
+
+.header {
+    padding: 10px 14px;
+    border-bottom: 1px solid hsla(var(--text-primary) / 0.1);
+    background: hsla(var(--text-primary) / 0.02);
+}
+
+.columnName {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: hsl(var(--text-muted));
+}
+
+.menuContent {
+    padding: 6px 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.menuItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.85rem;
+    color: hsl(var(--text-primary));
+    transition: background 0.15s ease;
+}
+
+.menuItem:hover {
+    background: hsla(var(--text-primary) / 0.05);
+}
+
+.danger {
+    color: #f85a5a;
+}
+
+.danger:hover {
+    background: hsla(248, 100%, 50%, 0.05);
+}
+
+.icon {
+    width: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.label {
+    flex: 1;
+}
+
+.arrow {
+    font-size: 1rem;
+    opacity: 0.4;
+    font-weight: 300;
+}
+
+.divider {
+    height: 1px;
+    background: hsla(var(--text-primary) / 0.08);
+    margin: 6px 0;
+}

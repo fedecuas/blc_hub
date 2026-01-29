@@ -1,0 +1,612 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 2rem;
+}
+
+.header h1 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin-bottom: 0.1rem;
+}
+
+.subtitle {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.viewControls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 6px;
+    border-radius: 16px;
+    background: transparent;
+    border: 1px solid hsla(var(--text-primary) / 0.08);
+}
+
+.tab {
+    padding: 8px 18px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: hsl(var(--text-muted));
+}
+
+.tab span:first-child {
+    filter: grayscale(100%);
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.tabActive {
+    background: hsla(var(--text-primary) / 0.06);
+    color: hsl(var(--text-primary));
+    border: 1px solid hsla(var(--text-primary) / 0.1);
+}
+
+.tabActive span:first-child {
+    filter: grayscale(0%);
+    opacity: 1;
+}
+
+/* Overview Grid */
+.projectsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.projectCard {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.projectCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgb(0 0 0 / 0.15);
+    border-color: hsla(var(--accent-primary) / 0.3);
+}
+
+.statusBadge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+/* Board View - Grouped Tables */
+.board {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: 500px;
+    padding-bottom: 250px !important;
+    overflow: visible !important;
+}
+
+.tableContainer {
+    width: 100%;
+    margin-bottom: 2rem;
+    background: hsla(var(--bg-secondary) / 0.5);
+    border-radius: 8px;
+    border: 1px solid hsla(var(--text-primary) / 0.15);
+    position: relative;
+    overflow: visible !important;
+    z-index: 10;
+}
+
+.groupHeader {
+    background: hsla(var(--bg-tertiary) / 0.4);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0.8rem 1.2rem;
+    border-bottom: 1px solid hsla(var(--text-primary) / 0.1);
+    border-radius: 8px 8px 0 0;
+    position: relative;
+    z-index: 100;
+    overflow: visible !important;
+}
+
+.groupHeader:hover {
+    background: hsla(var(--bg-tertiary) / 0.8);
+}
+
+.groupHeader td {
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+}
+
+.groupTitle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    color: hsl(var(--text-primary));
+    position: relative;
+    z-index: 50;
+}
+
+.groupTitle span:last-child:hover {
+    text-decoration: underline dotted;
+    cursor: text;
+}
+
+.caret {
+    transition: transform 0.3s ease;
+    font-size: 0.6rem;
+    opacity: 0.8;
+}
+
+.caretDown {
+    transform: rotate(90deg);
+}
+
+.dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    background: hsla(var(--bg-primary) / 0.2);
+}
+
+.dataTable tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+}
+
+.dataTable tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+}
+
+.dataTable th {
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: hsl(var(--text-muted));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid hsla(var(--text-primary) / 0.2);
+    border-right: 1px solid hsla(var(--text-primary) / 0.1);
+    background: hsla(var(--bg-secondary) / 0.4);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dataTable th:hover {
+    background: hsla(var(--bg-secondary) / 0.8);
+}
+
+.addColumnHeader {
+    text-align: center !important;
+    transition: all 0.2s ease;
+}
+
+.addColumnHeader:hover {
+    background: hsl(var(--accent-primary)) !important;
+    color: #fff !important;
+}
+
+.resizing {
+    user-select: none;
+    cursor: col-resize;
+}
+
+.resizeHandle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 8px;
+    /* Slightly wider for better touch area */
+    height: 100%;
+    cursor: col-resize;
+    z-index: 10;
+    transition: background 0.2s ease;
+}
+
+.resizeHandle:hover,
+.resizing .resizeHandle {
+    background: hsla(var(--accent-primary) / 0.4);
+    box-shadow: 0 0 8px hsla(var(--accent-primary) / 0.3);
+}
+
+.editableHeader {
+    width: 100%;
+    background: hsl(var(--bg-primary)) !important;
+    border: 2px solid hsl(var(--accent-primary)) !important;
+    border-radius: 4px;
+    color: hsl(var(--text-primary)) !important;
+    font: inherit;
+    font-weight: 800;
+    text-transform: uppercase;
+    outline: none;
+    padding: 2px 6px;
+    box-shadow: 0 0 10px hsla(var(--accent-primary) / 0.2);
+    position: relative;
+}
+
+.dataTable th:last-child {
+    border-right: none;
+}
+
+.infoIcon {
+    font-size: 0.6rem;
+    opacity: 0.7;
+    margin-left: 4px;
+    cursor: help;
+}
+
+.priorityBlock,
+.statusBlock {
+    border: 1px solid hsla(var(--white) / 0.05);
+}
+
+.dataRow {
+    transition: background 0.15s ease;
+}
+
+.dataRow:hover {
+    background: hsla(var(--white) / 0.04);
+}
+
+.dataRow td {
+    padding: 1.5px 0;
+    /* Vertical encapsulation reduced for even higher density */
+    height: 36px;
+    font-size: 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid hsla(var(--text-primary) / 0.1);
+    border-right: 1px solid hsla(var(--text-primary) / 0.1);
+    /* Clear grid lines */
+    box-sizing: border-box;
+}
+
+.dataRow td:last-child {
+    border-right: none;
+}
+
+.cellContent {
+    padding: 0 8px;
+    /* Horizontal spacing from grid lines */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Center capsules horizontally by default */
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.checkboxCell {
+    width: 38px;
+    text-align: center;
+    border-left: 4px solid hsl(var(--accent-primary));
+    background: hsla(var(--text-primary) / 0.02);
+}
+
+.accentBar {
+    width: 4px;
+    height: 100%;
+}
+
+.blockCell {
+    color: white;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    /* Reduced font size */
+    border-radius: 8px;
+    margin: 0;
+    /* Let cell padding handle the gap */
+    width: 100%;
+    /* Fill the horizontal space */
+    height: 100%;
+    /* Fill the vertical space */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: filter 0.2s ease;
+}
+
+.blockCell:hover {
+    filter: brightness(1.1);
+}
+
+.inlineSelect,
+.inlineInput {
+    width: 100%;
+    height: 100%;
+    background: hsl(var(--bg-secondary)) !important;
+    color: hsl(var(--text-primary)) !important;
+    border: 1px solid hsla(var(--accent-primary) / 0.5) !important;
+    border-radius: 4px;
+    padding: 0 8px;
+    outline: none;
+    font-size: 0.8rem;
+}
+
+.inlineSelect option {
+    background: hsl(var(--bg-secondary));
+    color: hsl(var(--text-primary));
+}
+
+.tagCell {
+    min-width: 100px;
+}
+
+.responsibleCell {
+    width: 60px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: hsla(var(--white) / 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.dateCell {
+    color: hsla(var(--white) / 0.6);
+    font-weight: 500;
+    padding-left: 12px;
+}
+
+.addRow {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.addRow:hover {
+    opacity: 1;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* High-Fidelity Dropdown Popover */
+.popoverContainer {
+    position: fixed;
+    z-index: 1000;
+    background: #2b2e3e;
+    /* Deep Night Owl background */
+    border: 1px solid hsla(var(--white) / 0.1);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgb(0 0 0 / 0.4);
+    min-width: 240px;
+    overflow: hidden;
+    animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.popoverHeader {
+    padding: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.popoverGrid {
+    padding: 8px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+}
+
+.popoverOption {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+}
+
+.popoverOption:hover {
+    filter: brightness(1.1);
+    transform: translateX(4px);
+}
+
+.popoverFooter {
+    border-top: 1px solid hsla(var(--white) / 0.1);
+    padding: 8px;
+    background: rgb(0 0 0 / 0.1);
+}
+
+.footerAction {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: hsla(var(--white), 0.6);
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.footerAction:hover {
+    background: hsla(var(--white) / 0.05);
+    color: white;
+}
+
+/* Edit Mode Styles */
+.editList {
+    padding: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.editRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 4px;
+    border-radius: 6px;
+    background: hsla(var(--white) / 0.03);
+}
+
+.colorChip {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.editInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 0.8rem;
+    outline: none;
+    padding: 4px;
+}
+
+.applyButton {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    background: hsla(var(--white) / 0.1);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.applyButton:hover {
+    background: hsla(var(--white) / 0.2);
+}
+
+.colorGridPopover {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    z-index: 10000 !important;
+    background: hsl(var(--bg-card));
+    border: 1px solid hsla(var(--text-primary) / 0.15);
+    border-radius: 8px;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    width: max-content;
+    pointer-events: auto;
+}
+
+[data-theme='light'] .colorGridPopover {
+    background: white;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.colorOption {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.colorOption:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.groupColorSwatch {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    border: 1px solid hsla(var(--text-primary) / 0.1);
+}
+
+.groupColorSwatch:hover {
+    transform: scale(1.1);
+}
+
+/* Timeline View */
+.timelineContainer {
+    padding: 2rem;
+    overflow-x: auto;
+}
+
+.timelineGrid {
+    min-width: 900px;
+}

@@ -1,0 +1,761 @@
+.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    height: 100%;
+    margin: 0;
+    background: hsl(var(--bg-primary));
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+/* Left Panel */
+.leftPanel {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    padding: 1.5rem 3rem;
+    /* Aggressively reduced padding */
+    color: white;
+    overflow: visible;
+    border-radius: 24px 0 0 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.leftContentWrapper {
+    width: 100%;
+}
+
+/* Header */
+.header {
+    margin-bottom: 0.5rem;
+}
+
+.greeting {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    color: white;
+}
+
+.subGreeting {
+    font-size: 0.85rem;
+    opacity: 0.5;
+    margin: 0;
+}
+
+/* Top Bar (Selector + Toggle) */
+.topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+}
+
+/* Portfolio Selector */
+.portfolioSelector {
+    position: relative;
+    margin-bottom: 0;
+    /* Handled by topBar */
+    flex: 1;
+}
+
+.selectorButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    /* Smaller padding */
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.selectorButton:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.selectorIcon {
+    font-size: 1rem;
+}
+
+.selectorName {
+    font-weight: 500;
+}
+
+.selectorArrow {
+    font-size: 0.5rem;
+    opacity: 0.5;
+    margin-left: 4px;
+}
+
+/* View Toggle (Segmented Control) */
+.viewToggle {
+    display: flex;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 4px;
+}
+
+.toggleIcon {
+    opacity: 0.7;
+}
+
+.toggleLabel {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.toggleBtn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 6px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.toggleBtn:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.toggleBtn:hover .toggleIcon {
+    opacity: 1;
+}
+
+.toggleBtn.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.toggleBtn.active .toggleIcon {
+    opacity: 1;
+}
+
+/* Dropdown */
+.dropdownOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+}
+
+.dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 280px;
+    /* Slightly narrower */
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    overflow: hidden;
+    padding: 0.75rem;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Search Input */
+.dropdownSearchContainer {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.dropdownSearchIcon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.dropdownSearchInput {
+    width: 100%;
+    padding: 8px 8px 8px 32px;
+    background: #f3f4f6;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #1f2937;
+    outline: none;
+}
+
+.dropdownSearchInput::placeholder {
+    color: #9ca3af;
+}
+
+.dropdownSectionTitle {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #9ca3af;
+    margin-bottom: 0.25rem;
+    padding-left: 0.5rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.dropdownList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.dropdownItem:hover {
+    background: #f3f4f6;
+}
+
+.itemIconContainer {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.itemName {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.specialItem {
+    background: #e0f2fe;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.specialItem::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #0ea5e9;
+    border-radius: 4px 0 0 4px;
+}
+
+.specialIconBg {
+    background: #0ea5e9;
+    color: white;
+}
+
+.specialItem .itemName {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.itemTextContent {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.itemSubtext {
+    font-size: 0.7rem;
+    color: #0ea5e9;
+    font-weight: 500;
+}
+
+.checkIcon {
+    color: #0ea5e9;
+    font-weight: bold;
+}
+
+.dropdownFooter {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.addItemBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #0ea5e9;
+    font-weight: 500;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.plusIconContainer {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #e0f2fe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: #0ea5e9;
+    font-weight: bold;
+}
+
+/* Search */
+.searchContainer {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    opacity: 0.4;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 8px 8px 8px 36px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.searchInput::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.searchInput:focus {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Portfolios Section */
+.portfoliosSection {
+    margin-top: 0.5rem;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: white;
+}
+
+.count {
+    font-size: 0.85rem;
+    opacity: 0.6;
+}
+
+/* Portfolio Grid */
+.portfolioGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem 0.75rem;
+    /* Very Compact gap */
+    margin-top: 0.5rem;
+}
+
+.portfolioCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0.4rem;
+    border-radius: 8px;
+}
+
+.portfolioCard:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.portfolioCard.selected .portfolioIcon {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), 0 6px 20px rgba(0, 0, 0, 0.3);
+    transform: scale(1.02);
+}
+
+.portfolioIcon {
+    width: 42px;
+    /* Reduced from 48px */
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    position: relative;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.shortName {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.notificationDot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    background: #3b82f6;
+    border-radius: 50%;
+    border: 2px solid #1e293b;
+}
+
+.addMoreIcon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    transition: all 0.2s ease;
+}
+
+.addMoreIcon:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.portfolioName {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    text-align: center;
+}
+
+/* Right Panel */
+.rightPanel {
+    background: hsl(var(--bg-primary));
+    padding: 1.5rem 3rem;
+    /* Aggressively reduced padding */
+    position: relative;
+    border-radius: 40px 0 0 40px;
+    margin-left: -30px;
+    box-shadow: -30px 0 60px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    overflow: hidden;
+    height: 100%;
+    display: block;
+}
+
+.rightContentWrapper {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    /* Allow internal scroll only if absolutely necessary */
+    padding-right: 0.5rem;
+    /* Space for scrollbar */
+}
+
+.detailsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.detailsTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.detailsTitle h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    color: hsl(var(--text-primary));
+}
+
+.moreBtn {
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    opacity: 0.3;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: hsl(var(--text-primary));
+}
+
+.moreBtn:hover {
+    opacity: 1;
+    background: hsla(var(--text-primary) / 0.05);
+}
+
+.avatarGroup {
+    display: flex;
+    align-items: center;
+}
+
+.avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    border: 2px solid hsl(var(--bg-primary));
+}
+
+.detailsDescription {
+    font-size: 0.8rem;
+    color: hsl(var(--text-muted));
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+/* Tasks Sections */
+.tasksSection {
+    margin-bottom: 1rem;
+}
+
+.tasksSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.tasksSectionHeader h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+    color: hsl(var(--text-primary));
+}
+
+.tasksList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.taskItem {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid hsla(var(--text-primary) / 0.05);
+}
+
+.taskCheckbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid hsla(var(--text-primary) / 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.6rem;
+    color: white;
+    cursor: pointer;
+}
+
+.taskCheckbox.checked {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.taskText {
+    flex: 1;
+    font-size: 0.8rem;
+    color: hsl(var(--text-primary));
+}
+
+.statusBadge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+/* Floating Action Button */
+.fab {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+}
+
+.fab:hover {
+    transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .container {
+        grid-template-columns: 1fr;
+        margin: 0.5rem;
+        height: calc(100vh - 1rem);
+    }
+
+    .rightPanel {
+        display: none;
+    }
+
+    .portfolioGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Workspace View Styles */
+.workspaceView {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease;
+}
+
+.workspaceHeader {
+    margin-bottom: 1.5rem;
+    padding-top: 0.5rem;
+}
+
+.workspaceHeader h2 {
+    font-size: 1.75rem;
+    color: white;
+    margin: 0 0 0.25rem 0;
+    font-weight: 700;
+}
+
+.workspaceSubtitle {
+    font-size: 0.75rem;
+    color: #3b82f6;
+    /* Accent color */
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.workspaceStats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    width: 70%;
+    margin: 0 auto;
+}
+
+.statCard {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 1.6;
+}
+
+.statCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+.statValue {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.statLabel {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+    text-align: center;
+}
