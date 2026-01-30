@@ -143,9 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(true);
         try {
             console.log('[AuthContext] Attempting login for:', email);
-            console.log('[AuthContext] Timeout guard set to 20 seconds...');
+            console.log('[AuthContext] Timeout guard set to 45 seconds...');
 
-            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 20000);
+            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 45000);
 
             if (result.error) {
                 console.error('[AuthContext] Supabase returned error:', result.error.message);
@@ -156,6 +156,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return { success: true };
         } catch (err: any) {
             console.error('[AuthContext] Login exception:', err.message);
+
+            // Check for missing environment variables
+            const isUrlMissing = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'undefined';
+            const isKeyMissing = !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'undefined';
+
+            if (isUrlMissing || isKeyMissing) {
+                return {
+                    success: false,
+                    error: `ERROR CRÍTICO: Las credenciales de base de datos no están configuradas en Vercel. (URL: ${!isUrlMissing}, Key: ${!isKeyMissing}). Contacta con soporte.`
+                };
+            }
+
             if (err.message === 'AUTH_TIMEOUT') {
                 return { success: false, error: 'La conexión con el servidor es lenta. Por favor verifica tu internet o intenta de nuevo.' };
             }
