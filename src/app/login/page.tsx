@@ -11,6 +11,29 @@ export default function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { login } = useAuth();
     const router = useRouter();
+    const [showDebug, setShowDebug] = useState(false);
+    const [debugInfo, setDebugInfo] = useState<any>(null);
+
+    const runDiagnostics = async () => {
+        setDebugInfo({ status: 'Probando...', time: Date.now() });
+        const start = Date.now();
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/health`);
+            const end = Date.now();
+            setDebugInfo({
+                url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Configurada ✅' : 'NO CONFIGURADA ❌',
+                key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Configurada ✅' : 'NO CONFIGURADA ❌',
+                latencia: `${end - start}ms`,
+                status: res.status === 200 ? 'Conectado 🟢' : `Error ${res.status} 🔴`
+            });
+        } catch (err: any) {
+            setDebugInfo({
+                url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Configurada ✅' : 'NO CONFIGURADA ❌',
+                status: 'Error de Red / Bloqueado ❌',
+                error: err.message
+            });
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -172,10 +195,43 @@ export default function LoginPage() {
                         {isSubmitting ? 'Iniciando sesión...' : 'Entrar al Sistema'}
                     </button>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px', alignItems: 'center' }}>
                         <a href="#" style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.8rem', textDecoration: 'none' }}>¿Olvidaste tu contraseña?</a>
-                        <a href="#" style={{ color: '#60a5fa', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 600 }}>Solicitar Acceso</a>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowDebug(!showDebug);
+                                if (!showDebug) runDiagnostics();
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '0.75rem', cursor: 'pointer', opacity: 0.6 }}
+                        >
+                            {showDebug ? 'Ocultar Diagnóstico' : 'Diagnosticar'}
+                        </button>
                     </div>
+
+                    {showDebug && debugInfo && (
+                        <div style={{
+                            background: 'rgba(0,0,0,0.3)',
+                            padding: '1rem',
+                            borderRadius: '12px',
+                            fontSize: '0.7rem',
+                            color: 'rgba(255,255,255,0.7)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.4rem'
+                        }}>
+                            <div style={{ fontWeight: 700, color: '#60a5fa', marginBottom: '0.2rem' }}>ESTADO DE CONEXIÓN</div>
+                            <div>Supabase URL: {debugInfo.url}</div>
+                            <div>Supabase Key: {debugInfo.key}</div>
+                            <div>Estado API: {debugInfo.status}</div>
+                            {debugInfo.latencia && <div>Latencia: {debugInfo.latencia}</div>}
+                            {debugInfo.error && <div style={{ color: '#ef4444' }}>Error: {debugInfo.error}</div>}
+                            <div style={{ marginTop: '0.5rem', opacity: 0.5, fontSize: '0.6rem' }}>
+                                Si "Estado API" es Error de Red, revisa si tienes AdBlock activo.
+                            </div>
+                        </div>
+                    )}
                 </form>
             </div>
 

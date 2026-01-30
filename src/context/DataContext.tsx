@@ -726,23 +726,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updatedAt: new Date().toISOString()
         }));
 
-        // 2. Map to Supabase schema
+        // 2. Map to Supabase schema - ONLY if we have valid non-null data
         const mappedUpdates: any = {
             id: user.id,
-            name: fullName,
-            first_name: firstName,
-            last_name: lastName,
-            role: updates.role !== undefined ? updates.role : currentUser.role,
-            avatar_url: updates.avatarUrl !== undefined ? updates.avatarUrl : currentUser.avatarUrl,
-            bio: updates.bio !== undefined ? updates.bio : currentUser.bio,
-            phone: updates.phone !== undefined ? updates.phone : currentUser.phone,
-            location: updates.location !== undefined ? updates.location : currentUser.location,
-            language: updates.language !== undefined ? updates.language : currentUser.language,
             updated_at: new Date().toISOString()
         };
 
+        if (fullName) mappedUpdates.name = fullName;
+        if (firstName) mappedUpdates.first_name = firstName;
+        if (lastName) mappedUpdates.last_name = lastName;
+        if (updates.role !== undefined) mappedUpdates.role = updates.role;
+        if (updates.avatarUrl !== undefined) mappedUpdates.avatar_url = updates.avatarUrl;
+        if (updates.bio !== undefined) mappedUpdates.bio = updates.bio;
+        if (updates.phone !== undefined) mappedUpdates.phone = updates.phone;
+        if (updates.location !== undefined) mappedUpdates.location = updates.location;
+        if (updates.language !== undefined) mappedUpdates.language = updates.language;
+
         try {
-            console.log('[DataContext] Sending to Supabase with 6s timeout guard...');
+            console.log('[DataContext] Sending to Supabase with 6s timeout guard...', mappedUpdates);
             // We use upsert to ensure the row exists
             const result = await withTimeout<any>(supabase.from('profiles').upsert(mappedUpdates));
 
