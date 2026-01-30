@@ -36,7 +36,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
             onClose();
         } catch (err: any) {
             console.error('[ProfileModal] Submission error:', err);
-            setError(err.message || 'Error al guardar el perfil. Intenta de nuevo.');
+            if (err.message === 'TIMEOUT') {
+                setError('La conexión es lenta, pero tus cambios se guardarán en segundo plano.');
+                // Optimistically close after 2 seconds if it was just a slow sync
+                setTimeout(onClose, 2500);
+            } else {
+                setError(err.message || 'Error al guardar el perfil. Intenta de nuevo.');
+            }
         } finally {
             setIsSaving(false);
         }

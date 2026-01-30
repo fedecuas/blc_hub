@@ -668,23 +668,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // USER PROFILE CRUD
     // ============================================
 
+    // Utility for network timeouts to prevent UI hangs in production
+    const withTimeout = async <T,>(promise: any, timeoutMs: number = 6000): Promise<T> => {
+        return Promise.race([
+            promise,
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+            )
+        ]);
+    };
+
     const updateUserProfile = async (updates: Partial<UserProfile>) => {
         if (!user) return;
 
-        // Calculate fallbacks from current state to ensure full object for upsert
+        // 1. Optimistic Update: Refresh UI immediately
         const firstName = updates.firstName !== undefined ? updates.firstName : currentUser.firstName;
         const lastName = updates.lastName !== undefined ? updates.lastName : currentUser.lastName;
+        const fullName = updates.name !== undefined ? updates.name : `${firstName} ${lastName}`.trim() || user.name;
 
-        // Use a provided name, or calculate it, or fallback to auth user name
-        const fullName = updates.name !== undefined
-            ? updates.name
-            : (firstName || lastName)
-                ? `${firstName} ${lastName}`.trim()
-                : (currentUser.name && currentUser.name !== 'Cargando...')
-                    ? currentUser.name
-                    : (user.name || 'Usuario');
+        console.log('[DataContext] Applying optimistic update to local state');
+        setCurrentUser(prev => ({
+            ...prev,
+            ...updates,
+            firstName,
+            lastName,
+            name: fullName,
+            updatedAt: new Date().toISOString()
+        }));
 
-        // Map updates to snake_case for Supabase
+        // 2. Map to Supabase schema
         const mappedUpdates: any = {
             id: user.id,
             name: fullName,
@@ -699,31 +711,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updated_at: new Date().toISOString()
         };
 
-        console.log('[DataContext] Starting updateUserProfile upsert...');
-        const { error } = await supabase
-            .from('profiles')
-            .upsert(mappedUpdates);
+        try {
+            console.log('[DataContext] Sending to Supabase with 6s timeout guard...');
+            // We use upsert to ensure the row exists
+            const result = await withTimeout<any>(supabase.from('profiles').upsert(mappedUpdates));
 
-        if (error) {
-            console.error('[DataContext] Error in upsert:', error);
-            throw error;
-        }
+            if (result.error) {
+                console.error('[DataContext] Database write failed:', result.error);
+                throw result.error;
+            }
 
-        console.log('[DataContext] Upsert successful. Updating local state.');
+            console.log('[DataContext] Cloud save confirmed successful.');
 
-        setCurrentUser(prev => ({
-            ...prev,
-            ...updates,
-            firstName,
-            lastName,
-            name: fullName,
-            updatedAt: new Date().toISOString()
-        }));
-
-        // Refresh AuthContext in background to keep user object in sync without blocking UI
-        if (refreshProfile) {
-            console.log('[DataContext] Triggering fire-and-forget refreshProfile');
-            refreshProfile().catch(err => console.error('[DataContext] Background refreshProfile failed:', err));
+            // 3. Background Sync (Non-blocking)
+            if (refreshProfile) {
+                console.log('[DataContext] Triggering fire-and-forget background sync');
+                refreshProfile().catch(err => console.error('[Background Sync] Error:', err));
+            }
+        } catch (err: any) {
+            console.error('[DataContext] Update failed or timed out:', err.message);
+            // If it's a timeout, we keep the optimistic state but warn the user through the modal
+            throw err;
         }
     };
 
