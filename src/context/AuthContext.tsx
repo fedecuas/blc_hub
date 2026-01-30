@@ -132,27 +132,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const refreshProfile = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
+        console.log('[AuthContext] Refreshing profile...');
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
 
-            setUser({
-                id: session.user.id,
-                email: session.user.email || '',
-                name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
-                role: profile?.role || 'Panel Senior',
-                avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
-                firstName: profile?.first_name || '',
-                lastName: profile?.last_name || '',
-                bio: profile?.bio || '',
-                phone: profile?.phone || '',
-                location: profile?.location || '',
-                language: profile?.language || 'es'
-            } as any);
+                if (error) {
+                    console.error('[AuthContext] Error fetching profile:', error);
+                    return;
+                }
+
+                console.log('[AuthContext] Profile fetched successfully:', profile?.name);
+                setUser({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                    role: profile?.role || 'Panel Senior',
+                    avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+                    firstName: profile?.first_name || '',
+                    lastName: profile?.last_name || '',
+                    bio: profile?.bio || '',
+                    phone: profile?.phone || '',
+                    location: profile?.location || '',
+                    language: profile?.language || 'es'
+                } as any);
+            }
+        } catch (err) {
+            console.error('[AuthContext] Unexpected error in refreshProfile:', err);
         }
     };
 

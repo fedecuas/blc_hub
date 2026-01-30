@@ -27,13 +27,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('[ProfileModal] Submitting profile updates...', formData);
         setIsSaving(true);
         setError(null);
         try {
             await updateUserProfile(formData);
+            console.log('[ProfileModal] Update successful. Closing modal.');
             onClose();
         } catch (err: any) {
-            console.error('Error saving profile:', err);
+            console.error('[ProfileModal] Submission error:', err);
             setError(err.message || 'Error al guardar el perfil. Intenta de nuevo.');
         } finally {
             setIsSaving(false);

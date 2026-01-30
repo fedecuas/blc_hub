@@ -699,19 +699,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updated_at: new Date().toISOString()
         };
 
+        console.log('[DataContext] Starting updateUserProfile upsert...');
         const { error } = await supabase
             .from('profiles')
             .upsert(mappedUpdates);
 
         if (error) {
-            console.error('Error updating user profile:', error);
+            console.error('[DataContext] Error in upsert:', error);
             throw error;
         }
 
-        // Refresh AuthContext to keep user object in sync
-        if (refreshProfile) {
-            await refreshProfile();
-        }
+        console.log('[DataContext] Upsert successful. Updating local state.');
 
         setCurrentUser(prev => ({
             ...prev,
@@ -721,6 +719,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             name: fullName,
             updatedAt: new Date().toISOString()
         }));
+
+        // Refresh AuthContext in background to keep user object in sync without blocking UI
+        if (refreshProfile) {
+            console.log('[DataContext] Triggering fire-and-forget refreshProfile');
+            refreshProfile().catch(err => console.error('[DataContext] Background refreshProfile failed:', err));
+        }
     };
 
     // ============================================
