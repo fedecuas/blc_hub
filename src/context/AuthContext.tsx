@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser({
                     id: session.user.id,
                     email: session.user.email || '',
-                    name: profile?.name || session.user.user_metadata?.full_name || 'Usuario',
+                    name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
                     role: profile?.role || 'Panel Senior',
                     avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
                 });
@@ -60,12 +60,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
-                    .single();
+                    .maybeSingle();
 
                 setUser({
                     id: session.user.id,
                     email: session.user.email || '',
-                    name: profile?.name || session.user.user_metadata?.full_name || 'Usuario',
+                    name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
                     role: profile?.role || 'Panel Senior',
                     avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
                 });

@@ -79,12 +79,12 @@ interface DataContextType {
 // ============================================
 
 const INITIAL_USER: UserProfile = {
-    firstName: 'Federico',
-    lastName: 'Antillon',
-    name: 'Federico Antillon',
-    email: 'federico@example.com',
+    firstName: '',
+    lastName: '',
+    name: 'Cargando...',
+    email: '',
     role: 'Panel Senior',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150',
+    avatarUrl: '',
     language: 'es',
     updatedAt: new Date().toISOString()
 };
@@ -129,18 +129,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [projects, setProjects] = useState<Project[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
-    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-        { id: 'tm1', firstName: 'Federico', lastName: 'Antillon', email: 'f@blc.com', role: 'Director', specialties: ['Strategy'], status: 'active', createdAt: '', updatedAt: '' },
-        { id: 'tm2', firstName: 'Jane', lastName: 'Smith', email: 'j@blc.com', role: 'Project Manager', specialties: ['Operations'], status: 'active', createdAt: '', updatedAt: '' }
-    ]);
-    const [portfolioRelations, setPortfolioRelations] = useState<{ portfolio_id: string, member_id: string }[]>([
-        { portfolio_id: 'personal', member_id: 'tm1' },
-        { portfolio_id: 'personal', member_id: 'tm2' },
-        { portfolio_id: 'biolink', member_id: 'tm1' }
-    ]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [portfolioRelations, setPortfolioRelations] = useState<{ portfolio_id: string, member_id: string }[]>([]);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USER);
     const [isLoaded, setIsLoaded] = useState(false);
+
+    // Sync currentUser with Auth User
+    useEffect(() => {
+        if (user) {
+            setCurrentUser({
+                firstName: user.name.split(' ')[0] || '',
+                lastName: user.name.split(' ').slice(1).join(' ') || '',
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                avatarUrl: user.avatarUrl,
+                language: 'es',
+                updatedAt: new Date().toISOString()
+            });
+        }
+    }, [user]);
 
     // Initial Fetch from Supabase
     useEffect(() => {
@@ -651,10 +660,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // USER PROFILE CRUD
     // ============================================
 
-    const updateUserProfile = (updates: Partial<UserProfile>) => {
+    const updateUserProfile = async (updates: Partial<UserProfile>) => {
+        if (!user) return;
+
+        // Map updates to snake_case for Supabase
+        const mappedUpdates: any = {};
+        if (updates.name !== undefined) mappedUpdates.name = updates.name;
+        if (updates.firstName !== undefined) mappedUpdates.first_name = updates.firstName;
+        if (updates.lastName !== undefined) mappedUpdates.last_name = updates.lastName;
+        if (updates.role !== undefined) mappedUpdates.role = updates.role;
+        if (updates.avatarUrl !== undefined) mappedUpdates.avatar_url = updates.avatarUrl;
+        if (updates.bio !== undefined) mappedUpdates.bio = updates.bio;
+        if (updates.phone !== undefined) mappedUpdates.phone = updates.phone;
+        if (updates.location !== undefined) mappedUpdates.location = updates.location;
+        if (updates.language !== undefined) mappedUpdates.language = updates.language;
+
+        mappedUpdates.updated_at = new Date().toISOString();
+
+        const { error } = await supabase
+            .from('profiles')
+            .update(mappedUpdates)
+            .eq('id', user.id);
+
+        if (error) {
+            console.error('Error updating user profile:', error);
+            // Even if DB fails, update local state for immediate feedback
+        }
+
         setCurrentUser(prev => {
             const updated = { ...prev, ...updates, updatedAt: new Date().toISOString() };
-            // Auto-calculate full name if first or last name changes
             if (updates.firstName || updates.lastName) {
                 updated.name = `${updated.firstName} ${updated.lastName}`.trim();
             }
