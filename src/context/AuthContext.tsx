@@ -231,7 +231,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
         }
     }, [isAuthenticated, isLoading, pathname, router]);
 
-    if (isLoading) {
+    if (isLoading && pathname !== '/login') {
         return (
             <div style={{
                 height: '100vh',
