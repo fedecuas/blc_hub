@@ -37,37 +37,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
 
+    // Safety timeout helper
+    const withAuthTimeout = async <T,>(promise: any, timeoutMs: number = 5000): Promise<T> => {
+        return Promise.race([
+            promise,
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('AUTH_TIMEOUT')), timeoutMs)
+            )
+        ]);
+    };
+
     // Check for saved session
     useEffect(() => {
         const checkSession = async () => {
+            console.log('[AuthContext] Starting session check...');
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session?.user) {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .maybeSingle();
+                const { data: { session } } = await withAuthTimeout(supabase.auth.getSession());
 
-                    setUser({
-                        id: session.user.id,
-                        email: session.user.email || '',
-                        name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
-                        role: profile?.role || 'Panel Senior',
-                        avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
-                        // Add extended fields for sync
-                        firstName: profile?.first_name || '',
-                        lastName: profile?.last_name || '',
-                        bio: profile?.bio || '',
-                        phone: profile?.phone || '',
-                        location: profile?.location || '',
-                        language: profile?.language || 'es'
-                    } as any);
+                if (session?.user) {
+                    console.log('[AuthContext] Session found, fetching profile...');
+                    try {
+                        const result = await withAuthTimeout<any>(
+                            supabase
+                                .from('profiles')
+                                .select('*')
+                                .eq('id', session.user.id)
+                                .maybeSingle(),
+                            4000
+                        );
+                        const profile = result.data;
+
+                        setUser({
+                            id: session.user.id,
+                            email: session.user.email || '',
+                            name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                            role: profile?.role || 'Panel Senior',
+                            avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+                            firstName: profile?.first_name || '',
+                            lastName: profile?.last_name || '',
+                            bio: profile?.bio || '',
+                            phone: profile?.phone || '',
+                            location: profile?.location || '',
+                            language: profile?.language || 'es'
+                        } as any);
+                    } catch (profileErr) {
+                        console.error('[AuthContext] Profile fetch timeout or error:', profileErr);
+                        // Fallback to basic session user info
+                        setUser({
+                            id: session.user.id,
+                            email: session.user.email || '',
+                            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                            role: 'Panel Senior',
+                            avatarUrl: session.user.user_metadata?.avatar_url
+                        } as any);
+                    }
+                } else {
+                    console.log('[AuthContext] No active session found.');
                 }
             } catch (err) {
-                console.error('Error checking session:', err);
+                console.error('[AuthContext] Session check failed or timed out:', err);
             } finally {
                 setIsLoading(false);
+                console.log('[AuthContext] Initialization complete.');
             }
         };
 

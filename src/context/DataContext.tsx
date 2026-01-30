@@ -164,14 +164,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const fetchData = async () => {
             setIsLoaded(false);
             try {
-                const [pRes, prRes, tRes, tmRes, ptmRes, uRes] = await Promise.all([
-                    supabase.from('portfolios').select('*'),
-                    supabase.from('projects').select('*'),
-                    supabase.from('tasks').select('*'),
-                    supabase.from('team_members').select('*'),
-                    supabase.from('portfolio_team_members').select('*'),
-                    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
-                ]);
+                console.log('[DataContext] Fetching initial data with 10s timeout...');
+                const [pRes, prRes, tRes, tmRes, ptmRes, uRes] = await withTimeout<any[]>(
+                    Promise.all([
+                        supabase.from('portfolios').select('*'),
+                        supabase.from('projects').select('*'),
+                        supabase.from('tasks').select('*'),
+                        supabase.from('team_members').select('*'),
+                        supabase.from('portfolio_team_members').select('*'),
+                        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+                    ]),
+                    10000
+                );
 
                 if (pRes.data) {
                     setPortfolios(pRes.data.map(p => ({
