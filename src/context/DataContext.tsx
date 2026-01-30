@@ -138,21 +138,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USER);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    // Sync currentUser with Auth User
+    // Sync currentUser with Auth User (Initial Only)
     useEffect(() => {
-        if (user) {
+        if (user && !currentUser.email) {
+            console.log('[DataContext] Initializing profile from Auth session...');
             setCurrentUser({
-                firstName: user.name.split(' ')[0] || '',
-                lastName: user.name.split(' ').slice(1).join(' ') || '',
+                firstName: (user as any).firstName || user.name?.split(' ')[0] || '',
+                lastName: (user as any).lastName || user.name?.split(' ').slice(1).join(' ') || '',
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 avatarUrl: user.avatarUrl,
-                language: 'es',
+                bio: (user as any).bio || '',
+                phone: (user as any).phone || '',
+                location: (user as any).location || '',
+                language: (user as any).language || 'es',
                 updatedAt: new Date().toISOString()
             });
         }
-    }, [user]);
+    }, [user, currentUser.email]);
 
     // Initial Fetch from Supabase
     useEffect(() => {
@@ -253,21 +257,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 // We'll store ptm relations in a ref or state if needed for faster lookup
                 setPortfolioRelations(ptmRes.data || []);
 
-                // Profile Sync - Favor DB data over Auth context data
+                // Profile Sync - Merge DB data with local state to avoid losing fields
                 const profile = uRes.data;
-                setCurrentUser({
-                    firstName: profile?.first_name || (user as any).firstName || user.name?.split(' ')[0] || '',
-                    lastName: profile?.last_name || (user as any).lastName || user.name?.split(' ').slice(1).join(' ') || '',
-                    name: profile?.name || user.name,
-                    email: profile?.email || user.email,
-                    role: profile?.role || user.role,
-                    avatarUrl: profile?.avatar_url || user.avatarUrl,
-                    bio: profile?.bio || (user as any).bio || '',
-                    phone: profile?.phone || (user as any).phone || '',
-                    location: profile?.location || (user as any).location || '',
-                    language: profile?.language || (user as any).language || 'es',
-                    updatedAt: profile?.updated_at || new Date().toISOString()
-                });
+                if (profile) {
+                    setCurrentUser(prev => ({
+                        ...prev,
+                        firstName: profile.first_name || prev.firstName,
+                        lastName: profile.last_name || prev.lastName,
+                        name: profile.name || prev.name,
+                        role: profile.role || prev.role,
+                        avatarUrl: profile.avatar_url || prev.avatarUrl,
+                        bio: profile.bio || prev.bio,
+                        phone: profile.phone || prev.phone,
+                        location: profile.location || prev.location,
+                        language: profile.language || prev.language,
+                        updatedAt: profile.updated_at || prev.updatedAt
+                    }));
+                }
 
             } catch (error) {
                 console.error('Error fetching data from Supabase:', error);
