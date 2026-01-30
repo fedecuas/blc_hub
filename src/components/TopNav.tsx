@@ -89,19 +89,25 @@ const TopNav: React.FC = () => {
                     >
                         <div style={{ textAlign: 'right' }}>
                             <div style={{
-                                fontSize: '1rem',
+                                fontSize: '0.95rem',
                                 fontWeight: 800,
                                 color: 'var(--text-primary)',
-                                lineHeight: '1.2'
-                            }}>{currentUser.name}</div>
+                                lineHeight: '1.1'
+                            }}>
+                                {currentUser.firstName || currentUser.lastName
+                                    ? `${currentUser.firstName} ${currentUser.lastName}`.trim()
+                                    : (currentUser.name && !currentUser.name.includes('@') ? currentUser.name : currentUser.email.split('@')[0])}
+                            </div>
                             <div style={{
-                                fontSize: '0.85rem',
+                                fontSize: '0.72rem',
                                 color: 'var(--text-secondary)',
                                 fontWeight: 500,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'flex-end',
-                                gap: '4px'
+                                gap: '4px',
+                                opacity: 0.8,
+                                marginTop: '2px'
                             }}>
                                 {currentUser.role} <span style={{ fontSize: '0.6rem', opacity: 0.6, transform: showProfileDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>⌄</span>
                             </div>
