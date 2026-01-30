@@ -15,6 +15,7 @@ type RiskLevel = 'low' | 'medium' | 'high';
 type ViewMode = 'overview' | 'board' | 'timeline';
 interface Project {
     id: string;
+    sku?: string;
     name: string;
     description: string;
     manager: string;
@@ -49,7 +50,7 @@ interface BoardItem {
 export default function ProjectsPage() {
     const { t } = useLanguage();
     const router = require('next/navigation').useRouter();
-    const { portfolios, projects: contextProjects } = useDataContext();
+    const { portfolios, projects: contextProjects, tasks: contextTasks } = useDataContext();
 
     const [viewMode, setViewMode] = useState<ViewMode>('overview');
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ this: false, next: false, done: false });
@@ -106,6 +107,8 @@ export default function ProjectsPage() {
     const [selectedPortfolio, setSelectedPortfolio] = useState('all');
     const [showPortfolioDropdown, setShowPortfolioDropdown] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<ProjectType | null>(null);
 
     const handleResizeStart = (e: React.MouseEvent, field: string) => {
         e.preventDefault();
@@ -157,6 +160,7 @@ export default function ProjectsPage() {
     const projects: Project[] = selectedPortfolio === 'all'
         ? contextProjects.map(p => ({
             id: p.id,
+            sku: p.sku,
             name: p.name,
             description: p.description || '',
             manager: p.manager,
@@ -171,6 +175,7 @@ export default function ProjectsPage() {
             .filter(p => p.portfolioId === selectedPortfolio)
             .map(p => ({
                 id: p.id,
+                sku: p.sku,
                 name: p.name,
                 description: p.description || '',
                 manager: p.manager,
@@ -182,11 +187,37 @@ export default function ProjectsPage() {
                 color: p.color
             }));
 
-    const [boardItems, setBoardItems] = useState<BoardItem[]>([
-        { id: '1', item: 'Diseño de Riego Automático', responsible: 'Federico', projectId: 'gh', projectName: 'Green House', priority: 'Alta', status: 'Trabajand...', startDate: '2026-01-20', deadline: '2026-02-10', progress: 45, weekGroup: 'this' },
-        { id: '2', item: 'Assets de Personajes Principal', responsible: 'Federico', projectId: 'cp', projectName: 'Cyber Punk', priority: 'Media', status: 'Aprobado', startDate: '2026-01-22', deadline: '2026-02-15', progress: 30, weekGroup: 'this' },
-        { id: '3', item: 'TOMAR HAPPY PILLS', responsible: 'Julian Rossi', projectId: 'PROJ-001', projectName: 'Personal', priority: 'Alta', status: 'REPETIR', startDate: '2026-01-20', deadline: '2026-01-27', progress: 45, weekGroup: 'this' },
-    ]);
+    // Unified Data: Derive Board items from real tasks
+    const tasks: BoardItem[] = contextTasks
+        .filter(task => {
+            if (selectedPortfolio === 'all') return true;
+            const proj = contextProjects.find(p => p.id === task.projectId);
+            return proj?.portfolioId === selectedPortfolio;
+        })
+        .map(task => {
+            const proj = contextProjects.find(p => p.id === task.projectId);
+            // Map Supabase status/priority to UI labels
+            const statusLabel = statusTags.find(t => t.id === task.status || t.label.toLowerCase() === task.status.toLowerCase())?.label || task.status;
+            const priorityLabel = priorityTags.find(t => t.id === task.priority || t.label.toLowerCase() === task.priority.toLowerCase())?.label || task.priority;
+
+            return {
+                id: task.id,
+                item: task.title,
+                responsible: task.assignee || 'Antigravity',
+                projectId: task.projectId,
+                projectName: proj?.name || '?',
+                priority: priorityLabel,
+                status: statusLabel,
+                startDate: task.createdAt?.split('T')[0] || '',
+                deadline: task.dueDate || '',
+                progress: task.completed ? 100 : 0,
+                weekGroup: (new Date(task.dueDate || '').getTime() - new Date().getTime()) < 7 * 24 * 60 * 60 * 1000 ? 'this' : 'next'
+            };
+        });
+
+    // We'll keep the state for manual additions/edits if needed, but primary data is from context
+    const [localBoardItems, setLocalBoardItems] = useState<BoardItem[]>([]);
+    const boardItems = [...tasks, ...localBoardItems];
 
     const [statusTags, setStatusTags] = useState<Tag[]>([
         { id: 's1', label: 'Interrumpido', color: '#f85a5a' },
@@ -204,91 +235,156 @@ export default function ProjectsPage() {
     ]);
 
     const updateItem = (id: string, field: string, value: string | number | string[] | boolean) => {
-        setBoardItems(prev => prev.map(item =>
+        setLocalBoardItems((prev: BoardItem[]) => prev.map((item: BoardItem) =>
             item.id === id ? { ...item, [field]: value } : item
         ));
         setEditingCell(null);
     };
 
-    const renderOverview = () => (
-        <div className={styles.projectsGrid}>
-            {projects.map(proj => (
-                <div key={proj.id} className={`card ${styles.projectCard}`}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.5, marginBottom: '0.25rem' }}>{proj.id}</div>
-                            <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{proj.name}</h3>
-                        </div>
-                        <div className={styles.statusBadge} style={{
-                            background: `hsla(${proj.status === 'completed' ? 'var(--accent-gold)' : proj.status === 'active' ? 'var(--accent-primary)' : 'var(--bg-tertiary)'} / 0.1)`,
-                            color: proj.status === 'completed' ? 'hsl(var(--accent-gold))' : proj.status === 'active' ? 'hsl(var(--accent-primary))' : 'hsl(var(--text-muted))',
-                            border: `1px solid hsla(${proj.status === 'completed' ? 'var(--accent-gold)' : proj.status === 'active' ? 'var(--accent-primary)' : 'var(--bg-tertiary)'} / 0.15)`
-                        }}>
-                            {t(`projects.status.${proj.status}`)}
-                        </div>
+    const renderOverview = () => {
+        if (projects.length === 0) {
+            return (
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '400px',
+                    padding: '3rem',
+                    textAlign: 'center',
+                    background: 'hsla(var(--bg-primary) / 0.3)',
+                    borderRadius: '24px',
+                    border: '1px dashed hsla(var(--text-primary) / 0.1)',
+                    margin: '1rem 0'
+                }}>
+                    <div style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '24px',
+                        background: 'linear-gradient(135deg, hsla(var(--accent-primary) / 0.2), hsla(var(--accent-primary) / 0.05))',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '2.5rem',
+                        marginBottom: '1.5rem',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                    }}>
+                        🏗️
                     </div>
-
-                    <p style={{ fontSize: '0.85rem', opacity: 0.7, lineHeight: 1.5, minHeight: '3em' }}>{proj.description}</p>
-
-                    <div style={{ margin: '0.5rem 0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-                            <span>{t('projects.progress')}</span>
-                            <span>{proj.progress}%</span>
-                        </div>
-                        <div style={{ height: '8px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
-                            <div style={{
-                                width: `${proj.progress}%`,
-                                height: '100%',
-                                background: proj.color,
-                                boxShadow: `0 0 10px ${proj.color}40`,
-                                transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
-                            }}></div>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ display: 'flex', marginLeft: '0.25rem' }}>
-                                {proj.team.map((m, i) => (
-                                    <div key={i} style={{
-                                        width: '28px',
-                                        height: '28px',
-                                        borderRadius: '50%',
-                                        background: 'var(--bg-tertiary)',
-                                        border: '2px solid white',
-                                        marginLeft: i === 0 ? 0 : '-10px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '0.8rem',
-                                        zIndex: 10 - i
-                                    }}>{m}</div>
-                                ))}
-                            </div>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 700 }}>
-                                <span style={{ opacity: 0.5 }}>{t('projects.manager')}: </span>
-                                {proj.manager}
-                            </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.65rem', fontWeight: 700, opacity: 0.5 }}>{t('projects.risk.' + proj.risk)}</div>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: `hsl(${proj.risk === 'high' ? 'var(--accent-error)' : proj.risk === 'medium' ? 'var(--accent-gold)' : 'var(--accent-primary)'})`, marginLeft: 'auto', marginTop: '4px' }}></div>
-                        </div>
-                    </div>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1rem' }}>Bandeja de proyectos vacía</h2>
+                    <p style={{ opacity: 0.6, maxWidth: '450px', lineHeight: 1.6, marginBottom: '2rem' }}>
+                        Empieza a organizar tu trabajo. Los proyectos te permiten agrupar tareas, medir el progreso y colaborar con tu equipo en tiempo real.
+                    </p>
+                    <button
+                        className="btn-primary"
+                        style={{ padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 700 }}
+                        onClick={() => setIsCreateModalOpen(true)}
+                    >
+                        + Crear primer proyecto
+                    </button>
                 </div>
-            ))}
-            <button
-                className={`card ${styles.projectCard}`}
-                style={{ borderStyle: 'dashed', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: '200px' }}
-                onClick={() => setIsCreateModalOpen(true)}
-            >
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.5 }}>🏗️</div>
-                    <div style={{ fontWeight: 800, color: 'hsl(var(--accent-primary))' }}>{t('projects.new')}</div>
-                </div>
-            </button>
-        </div>
-    );
+            );
+        }
+
+        return (
+            <div className={styles.projectsGrid}>
+                {projects.map(proj => (
+                    <div key={proj.id} className={`card ${styles.projectCard}`}>
+                        {/* ... (rest of project card) */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'hsl(var(--accent-primary))', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>
+                                    {proj.sku || 'N/A'}
+                                </div>
+                                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{proj.name}</h3>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <button
+                                    onClick={() => {
+                                        const cp = contextProjects.find(p => p.id === proj.id);
+                                        if (cp) {
+                                            setEditingProject(cp);
+                                            setIsEditModalOpen(true);
+                                        }
+                                    }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', opacity: 0.6, padding: '4px', borderRadius: '4px', transition: 'all 0.2s' }}
+                                    className="hover-opacity"
+                                    title="Editar Proyecto"
+                                >
+                                    ✏️
+                                </button>
+                                <div className={styles.statusBadge} style={{
+                                    background: `hsla(${proj.status === 'completed' ? 'var(--accent-gold)' : proj.status === 'active' ? 'var(--accent-primary)' : 'var(--bg-tertiary)'} / 0.1)`,
+                                    color: proj.status === 'completed' ? 'hsl(var(--accent-gold))' : proj.status === 'active' ? 'hsl(var(--accent-primary))' : 'hsl(var(--text-muted))',
+                                    border: `1px solid hsla(${proj.status === 'completed' ? 'var(--accent-gold)' : proj.status === 'active' ? 'var(--accent-primary)' : 'var(--bg-tertiary)'} / 0.15)`
+                                }}>
+                                    {t(`projects.status.${proj.status}`)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <p style={{ fontSize: '0.85rem', opacity: 0.7, lineHeight: 1.5, minHeight: '3em' }}>{proj.description}</p>
+
+                        <div style={{ margin: '0.5rem 0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+                                <span>{t('projects.progress')}</span>
+                                <span>{proj.progress}%</span>
+                            </div>
+                            <div style={{ height: '8px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
+                                <div style={{
+                                    width: `${proj.progress}%`,
+                                    height: '100%',
+                                    background: proj.color,
+                                    boxShadow: `0 0 10px ${proj.color}40`,
+                                    transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }}></div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', marginLeft: '0.25rem' }}>
+                                    {proj.team.map((m, i) => (
+                                        <div key={i} style={{
+                                            width: '28px',
+                                            height: '28px',
+                                            borderRadius: '50%',
+                                            background: 'var(--bg-tertiary)',
+                                            border: '2px solid white',
+                                            marginLeft: i === 0 ? 0 : '-10px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '0.8rem',
+                                            zIndex: 10 - i
+                                        }}>{m}</div>
+                                    ))}
+                                </div>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 700 }}>
+                                    <span style={{ opacity: 0.5 }}>{t('projects.manager')}: </span>
+                                    {proj.manager}
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 700, opacity: 0.5 }}>{t('projects.risk.' + proj.risk)}</div>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: `hsl(${proj.risk === 'high' ? 'var(--accent-error)' : proj.risk === 'medium' ? 'var(--accent-gold)' : 'var(--accent-primary)'})`, marginLeft: 'auto', marginTop: '4px' }}></div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                <button
+                    className={`card ${styles.projectCard}`}
+                    style={{ borderStyle: 'dashed', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: '200px' }}
+                    onClick={() => setIsCreateModalOpen(true)}
+                >
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.5 }}>🏗️</div>
+                        <div style={{ fontWeight: 800, color: 'hsl(var(--accent-primary))' }}>{t('projects.new')}</div>
+                    </div>
+                </button>
+            </div>
+        );
+    };
 
     const respAvatars: Record<string, string> = {
         'Julian Rossi': '🧔🏻',
@@ -827,7 +923,7 @@ export default function ProjectsPage() {
                                             progress: 0,
                                             weekGroup: sectionKey === 'done' ? 'this' : sectionKey as 'this' | 'next'
                                         };
-                                        setBoardItems(prev => [...prev, newItem]);
+                                        setLocalBoardItems(prev => [...prev, newItem]);
                                     }}>
                                         + Agregar elemento
                                     </td>
@@ -885,7 +981,7 @@ export default function ProjectsPage() {
                                 fontSize: '0.65rem',
                                 fontWeight: 800
                             }}>
-                                {proj.id}
+                                {proj.sku}
                             </div>
                         </div>
                     </div>
@@ -1207,8 +1303,8 @@ export default function ProjectsPage() {
                             setShowColumnCenter(sectionKey);
                             break;
                         case 'sort':
-                            // Sort items by this column ascending
-                            setBoardItems(prev => [...prev].sort((a, b) => {
+                            // Sort local items by this column ascending
+                            setLocalBoardItems((prev: BoardItem[]) => [...prev].sort((a, b) => {
                                 const aVal = String((a as unknown as Record<string, unknown>)[columnId] || '');
                                 const bVal = String((b as unknown as Record<string, unknown>)[columnId] || '');
                                 return aVal.localeCompare(bVal);
@@ -1221,8 +1317,13 @@ export default function ProjectsPage() {
                 }}
             />
             <CreateProjectModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
+                isOpen={isCreateModalOpen || isEditModalOpen}
+                editingProject={editingProject || undefined}
+                onClose={() => {
+                    setIsCreateModalOpen(false);
+                    setIsEditModalOpen(false);
+                    setEditingProject(null);
+                }}
             />
         </div>
     );

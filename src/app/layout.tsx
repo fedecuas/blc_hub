@@ -16,15 +16,13 @@ const geistMono = Geist_Mono({
 
 import Sidebar from "@/components/Sidebar";
 import TopNav from "@/components/TopNav";
+import DataRecoveryGuard from "@/components/DataRecoveryGuard";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { DataProvider } from "@/context/DataContext";
 import { AuthProvider, AuthGuard } from "@/context/AuthContext";
 import { usePathname } from 'next/navigation';
 
-// Metadata cannot be exported from a "use client" file. 
-// For a pilot this is acceptable, or we can separate the logic. 
-// Simplest approach for now: remove metadata export or use a wrapper.
-// We will remove metadata export for this client component file for now.
+// ... (previous logic)
 
 export default function RootLayout({
   children,
@@ -40,21 +38,23 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <DataProvider>
-              <AuthGuard>
-                {isLoginPage ? (
-                  children
-                ) : (
-                  <div className="layout-wrapper">
-                    <Sidebar />
-                    <main className="main-content">
-                      <TopNav />
-                      <div className="scroll-area">
-                        {children}
-                      </div>
-                    </main>
-                  </div>
-                )}
-              </AuthGuard>
+              <DataRecoveryGuard>
+                <AuthGuard>
+                  {isLoginPage ? (
+                    children
+                  ) : (
+                    <div className="layout-wrapper">
+                      <Sidebar />
+                      <main className="main-content">
+                        <TopNav />
+                        <div className="scroll-area">
+                          {children}
+                        </div>
+                      </main>
+                    </div>
+                  )}
+                </AuthGuard>
+              </DataRecoveryGuard>
             </DataProvider>
           </AuthProvider>
         </LanguageProvider>

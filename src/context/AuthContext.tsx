@@ -50,14 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for saved session
     useEffect(() => {
         const checkSession = async () => {
-            console.log('[AuthContext] Starting session check...');
+            console.log('[AuthContext] Starting baseline session check...');
             try {
-                // Increase startup timeout to 20s to prevent premature logout on slow networks
-                const sessionRes = await withAuthTimeout<any>(supabase.auth.getSession(), 20000);
+                // Short timeout for initial session retrieval. If it's stuck, it's likely a client-side corruption.
+                const sessionRes = await withAuthTimeout<any>(supabase.auth.getSession(), 5000);
                 const session = sessionRes?.data?.session;
 
                 if (session?.user) {
-                    console.log('[AuthContext] Session found, fetching profile...');
+                    console.log('[AuthContext] Session located. Retrieval from Profiles...');
                     try {
                         const result = await withAuthTimeout<any>(
                             supabase
@@ -65,14 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 .select('*')
                                 .eq('id', session.user.id)
                                 .maybeSingle() as any,
-                            4000
+                            5000
                         );
                         const profile = result?.data;
 
                         setUser({
                             id: session.user.id,
                             email: session.user.email || '',
-                            name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                            name: profile?.name || session.user.user_metadata?.full_name || '', // No fallback to email prefix here
                             role: profile?.role || 'Panel Senior',
                             avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
                             firstName: profile?.first_name || '',
@@ -83,12 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             language: profile?.language || 'es'
                         } as any);
                     } catch (profileErr) {
-                        console.error('[AuthContext] Profile fetch timeout or error:', profileErr);
-                        // Fallback to basic session user info
+                        console.warn('[AuthContext] Profile fetch delayed. Providing base identity.');
                         setUser({
                             id: session.user.id,
                             email: session.user.email || '',
-                            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                            name: session.user.user_metadata?.full_name || '',
                             role: 'Panel Senior',
                             avatarUrl: session.user.user_metadata?.avatar_url
                         } as any);
@@ -97,16 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     console.log('[AuthContext] No active session found.');
                 }
             } catch (err: any) {
-                console.error('[AuthContext] Session check failed or timed out:', err);
-
-                // PERMANENT FIX: If the session check hangs or fails repeatedly, 
-                // it's likely corrupted local storage. We clear it to allow a fresh start.
-                if (err.message === 'AUTH_TIMEOUT') {
-                    console.warn('[AuthContext] Session check timed out. User might need to re-login if network is extremely slow.');
-                }
+                console.error('[AuthContext] Pre-flight session check failed or timed out:', err);
             } finally {
                 setIsLoading(false);
-                console.log('[AuthContext] Initialization complete.');
+                console.log('[AuthContext] Initialization cycle complete.');
             }
         };
 
@@ -152,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[AuthContext] Attempting login for:', email);
             console.log('[AuthContext] Timeout guard set to 90 seconds...');
 
-            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 90000);
+            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 15000);
 
             if (result.error) {
                 console.error('[AuthContext] Supabase returned error:', result.error.message);
@@ -176,9 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             if (err.message === 'AUTH_TIMEOUT') {
-                return { success: false, error: 'La conexión con el servidor es lenta. Por favor verifica tu internet o intenta de nuevo.' };
+                return { success: false, error: 'La conexión ha excedido el tiempo límite. Tu internet podría estar bloqueando el servidor de base de datos. Dale a "Reparar" abajo.' };
             }
-            return { success: false, error: 'Ocurrió un error inesperado al iniciar sesión.' };
+            return { success: false, error: 'Error al iniciar sesión. Verifica credenciales y conexión.' };
         } finally {
             setIsLoading(false);
         }

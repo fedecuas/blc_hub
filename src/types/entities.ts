@@ -21,6 +21,7 @@ export interface Portfolio {
 export interface Project {
     id: string;
     portfolioId: string; // Links to Portfolio
+    sku?: string; // Standardized SKU (4 Portfolio + 2 Project)
     name: string;
     shortName: string;
     description?: string;
@@ -42,7 +43,7 @@ export interface Task {
     projectId: string; // Links to Project
     title: string;
     description?: string;
-    status: 'approved' | 'in_progress' | 'in_review' | 'waiting' | 'completed' | 'cancelled';
+    status: 'todo' | 'waiting' | 'approved' | 'in_progress' | 'in_review' | 'completed' | 'cancelled';
     priority: 'low' | 'medium' | 'high' | 'urgent';
     assignee?: string;
     dueDate?: string;

@@ -43,35 +43,39 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, defaultProjectId
         ? projects.filter(p => p.portfolioId === formData.portfolioId)
         : [];
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.title || !formData.projectId) {
             alert('Por favor completa los campos requeridos (Título y Proyecto)');
             return;
         }
 
-        addTask({
-            title: formData.title,
-            description: formData.description,
-            projectId: formData.projectId,
-            priority: formData.priority as any,
-            status: 'todo' as any,
-            assignee: formData.assignee,
-            dueDate: formData.dueDate,
-            completed: false
-        });
+        try {
+            await addTask({
+                title: formData.title,
+                description: formData.description,
+                projectId: formData.projectId,
+                priority: formData.priority,
+                status: 'waiting',
+                assignee: formData.assignee,
+                dueDate: formData.dueDate,
+                completed: false
+            });
 
-        // Reset and close
-        setFormData({
-            title: '',
-            description: '',
-            portfolioId: '',
-            projectId: '',
-            priority: 'medium',
-            assignee: '',
-            dueDate: new Date().toISOString().split('T')[0]
-        });
-        onClose();
+            // Reset and close
+            setFormData({
+                title: '',
+                description: '',
+                portfolioId: '',
+                projectId: '',
+                priority: 'medium',
+                assignee: '',
+                dueDate: new Date().toISOString().split('T')[0]
+            });
+            onClose();
+        } catch (error) {
+            alert('Error al crear la tarea. Por favor intenta de nuevo.');
+        }
     };
 
     if (!isOpen) return null;

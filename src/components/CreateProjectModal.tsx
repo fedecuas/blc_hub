@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 
 import { useDataContext, getInitials } from '@/context/DataContext';
-import type { Portfolio, TeamMember } from '@/types/entities';
+import type { Portfolio, TeamMember, Project } from '@/types/entities';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
-interface CreateProjectModalProps {
+export interface CreateProjectModalProps {
     isOpen: boolean;
     onClose: () => void;
+    editingProject?: Project;
 }
 
 const allIconOptions = [
@@ -17,8 +19,9 @@ const allIconOptions = [
     '📣', '📢', '🔔', '📅', '📋', '📌', '🏷️', '🔍', '🔒', '🔑', '⚙️', '🧪'
 ];
 
-export default function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps) {
-    const { addProject, portfolios, getTeamMembersByPortfolio } = useDataContext();
+export default function CreateProjectModal({ isOpen, onClose, editingProject }: CreateProjectModalProps) {
+    const router = useRouter();
+    const { addProject, updateProject, portfolios, getTeamMembersByPortfolio } = useDataContext();
     const [uploadingIcon, setUploadingIcon] = useState(false);
     const [portfolioTeam, setPortfolioTeam] = useState<TeamMember[]>([]);
     const [isCustomManager, setIsCustomManager] = useState(false);
@@ -37,6 +40,42 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
         tags: '',
         progress: 0
     });
+
+    // Update form when editingProject changes
+    useEffect(() => {
+        if (editingProject) {
+            setFormData({
+                name: editingProject.name,
+                shortName: editingProject.shortName || '',
+                description: editingProject.description || '',
+                portfolioId: editingProject.portfolioId,
+                manager: editingProject.manager,
+                status: editingProject.status as any,
+                priority: (editingProject as any).priority || 'medium',
+                deadline: editingProject.deadline,
+                color: editingProject.color,
+                icon: editingProject.icon,
+                tags: (editingProject.tags || []).join(', '),
+                progress: editingProject.progress
+            });
+        } else {
+            // Reset to initial
+            setFormData({
+                name: '',
+                shortName: '',
+                description: '',
+                portfolioId: portfolios[0]?.id || '',
+                manager: '',
+                status: 'planning' as const,
+                priority: 'medium' as const,
+                deadline: '',
+                color: '#3b82f6',
+                icon: '📁',
+                tags: '',
+                progress: 0
+            });
+        }
+    }, [editingProject, portfolios]);
 
     // Update team list when portfolio changes
     useEffect(() => {
@@ -102,11 +141,15 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
         };
 
         try {
-            await addProject(projectData);
+            if (editingProject) {
+                await updateProject(editingProject.id, projectData as any);
+            } else {
+                await addProject(projectData);
+            }
             onClose();
         } catch (error) {
-            console.error('Error creating project:', error);
-            alert('Error al crear el proyecto. Por favor intenta de nuevo.');
+            console.error('Error saving project:', error);
+            alert('Error al guardar el proyecto. Por favor intenta de nuevo.');
         }
     };
 
@@ -121,6 +164,39 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
 
     if (!isOpen) return null;
 
+    if (!isOpen) return null;
+
+    if (portfolios.length === 0) {
+        return (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.7)',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2000
+            }} onClick={onClose}>
+                <div
+                    className="card"
+                    style={{ padding: '2.5rem', maxWidth: '450px', width: '90%', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'hsl(var(--bg-card))' }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div style={{ fontSize: '3rem' }}>📁</div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Necesitas un Portfolio</h2>
+                    <p style={{ opacity: 0.7, lineHeight: 1.6 }}>Para crear proyectos, primero debes organizar tu trabajo en un <strong>Portfolio</strong> (ej: "Clientes", "Proyectos Propios" o "Interno").</p>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button onClick={onClose} className="btn-secondary" style={{ flex: 1 }}>Cancelar</button>
+                        <button onClick={() => { router.push('/portfolio'); onClose(); }} className="btn-primary" style={{ flex: 1 }}>Ir a Portfolios</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     const colorOptions = [
         '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
         '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
@@ -153,7 +229,7 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
                 onClick={(e) => e.stopPropagation()}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Crear Nuevo Proyecto</h2>
+                    <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{editingProject ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}</h2>
                     <button
                         onClick={onClose}
                         style={{
@@ -601,11 +677,11 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
                                 fontWeight: 600
                             }}
                         >
-                            Guardar Proyecto
+                            {editingProject ? 'Guardar Cambios' : 'Guardar Proyecto'}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </div >
     );
 }

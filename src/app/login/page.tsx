@@ -37,8 +37,13 @@ export default function LoginPage() {
     };
 
     const handleHardReset = () => {
-        if (confirm('Esto limpiará la memoria del navegador para solucionar errores de conexión. ¿Continuar?')) {
-            localStorage.clear();
+        if (confirm('Esto reiniciará tu conexión para solucionar errores sin borrar tu perfil. ¿Continuar?')) {
+            // Only clear Supabase-related keys to preserve the locally cached profile
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('sb-') || key.includes('supabase')) {
+                    localStorage.removeItem(key);
+                }
+            });
             sessionStorage.clear();
             window.location.reload();
         }
