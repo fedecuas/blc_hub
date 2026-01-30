@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
     id: string;
@@ -15,7 +17,8 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<boolean>;
+    login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
 }
 
@@ -29,46 +32,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check for saved session
     useEffect(() => {
-        const savedUser = localStorage.getItem('blc_user');
-        if (savedUser) {
-            setUser(JSON.parse(savedUser));
-        }
-        setIsLoading(false);
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                setUser({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    name: profile?.name || session.user.user_metadata?.full_name || 'Usuario',
+                    role: profile?.role || 'Panel Senior',
+                    avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
+                });
+            }
+            setIsLoading(false);
+        };
+
+        checkSession();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (session?.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                setUser({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    name: profile?.name || session.user.user_metadata?.full_name || 'Usuario',
+                    role: profile?.role || 'Panel Senior',
+                    avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
+                });
+            } else {
+                setUser(null);
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const login = async (email: string, password: string): Promise<boolean> => {
+    const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
         setIsLoading(true);
-        // MOCK LOGIN - We'll replace this with Supabase later
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                if (email && password) {
-                    const mockUser: User = {
-                        id: '1',
-                        email,
-                        name: 'Federico Antillon',
-                        role: 'Panel Senior',
-                        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150'
-                    };
-                    setUser(mockUser);
-                    localStorage.setItem('blc_user', JSON.stringify(mockUser));
-                    setIsLoading(false);
-                    resolve(true);
-                } else {
-                    setIsLoading(false);
-                    resolve(false);
-                }
-            }, 1000);
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        setIsLoading(false);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('blc_user');
+    const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+        setIsLoading(true);
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: name,
+                }
+            }
+        });
+        setIsLoading(false);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+    };
+
+    const logout = async () => {
+        await supabase.auth.signOut();
         router.push('/login');
     };
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

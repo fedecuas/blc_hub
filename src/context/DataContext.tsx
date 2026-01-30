@@ -11,6 +11,8 @@ import type {
     BLCData,
     UserProfile
 } from '@/types/entities';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './AuthContext';
 
 // ============================================
 // UTILS
@@ -33,22 +35,22 @@ interface DataContextType {
     invoices: Invoice[];
 
     // Portfolio CRUD
-    addPortfolio: (portfolio: Omit<Portfolio, 'id' | 'createdAt' | 'updatedAt'>) => Portfolio;
-    updatePortfolio: (id: string, updates: Partial<Portfolio>) => void;
-    deletePortfolio: (id: string) => void;
+    addPortfolio: (portfolio: Omit<Portfolio, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Portfolio>;
+    updatePortfolio: (id: string, updates: Partial<Portfolio>) => Promise<void>;
+    deletePortfolio: (id: string) => Promise<void>;
     getPortfolioById: (id: string) => Portfolio | undefined;
 
     // Project CRUD
-    addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Project;
-    updateProject: (id: string, updates: Partial<Project>) => void;
-    deleteProject: (id: string) => void;
+    addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>;
+    updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+    deleteProject: (id: string) => Promise<void>;
     getProjectById: (id: string) => Project | undefined;
     getProjectsByPortfolio: (portfolioId: string) => Project[];
 
     // Task CRUD
-    addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Task;
-    updateTask: (id: string, updates: Partial<Task>) => void;
-    deleteTask: (id: string) => void;
+    addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task>;
+    updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+    deleteTask: (id: string) => Promise<void>;
     getTaskById: (id: string) => Task | undefined;
     getTasksByProject: (projectId: string) => Task[];
 
@@ -57,6 +59,12 @@ interface DataContextType {
     updateClient: (id: string, updates: Partial<Client>) => void;
     deleteClient: (id: string) => void;
     getClientById: (id: string) => Client | undefined;
+
+    // Team Member CRUD
+    addTeamMember: (member: Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'>) => Promise<TeamMember>;
+    updateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<void>;
+    deleteTeamMember: (id: string) => Promise<void>;
+    getTeamMembersByPortfolio: (portfolioId: string) => TeamMember[];
 
     // User Profile
     currentUser: UserProfile;
@@ -116,78 +124,194 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 // ============================================
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [portfolios, setPortfolios] = useState<Portfolio[]>(INITIAL_PORTFOLIOS);
-    const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-    const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+    const { user } = useAuth();
+    const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
-    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
+        { id: 'tm1', firstName: 'Federico', lastName: 'Antillon', email: 'f@blc.com', role: 'Director', specialties: ['Strategy'], status: 'active', createdAt: '', updatedAt: '' },
+        { id: 'tm2', firstName: 'Jane', lastName: 'Smith', email: 'j@blc.com', role: 'Project Manager', specialties: ['Operations'], status: 'active', createdAt: '', updatedAt: '' }
+    ]);
+    const [portfolioRelations, setPortfolioRelations] = useState<{ portfolio_id: string, member_id: string }[]>([
+        { portfolio_id: 'personal', member_id: 'tm1' },
+        { portfolio_id: 'personal', member_id: 'tm2' },
+        { portfolio_id: 'biolink', member_id: 'tm1' }
+    ]);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USER);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Load data from localStorage on mount
+    // Initial Fetch from Supabase
     useEffect(() => {
-        try {
-            const savedData = localStorage.getItem('blc_data');
-            if (savedData) {
-                const parsed: BLCData = JSON.parse(savedData);
-                setPortfolios(parsed.portfolios || INITIAL_PORTFOLIOS);
-                setProjects(parsed.projects || INITIAL_PROJECTS);
-                setTasks(parsed.tasks || INITIAL_TASKS);
-                setClients(parsed.clients || []);
-                setTeamMembers(parsed.teamMembers || []);
-                setInvoices(parsed.invoices || []);
-                setCurrentUser(parsed.user || INITIAL_USER);
+        if (!user) {
+            setIsLoaded(true);
+            return;
+        }
+
+        const fetchData = async () => {
+            setIsLoaded(false);
+            try {
+                const [pRes, prRes, tRes, tmRes, ptmRes] = await Promise.all([
+                    supabase.from('portfolios').select('*'),
+                    supabase.from('projects').select('*'),
+                    supabase.from('tasks').select('*'),
+                    supabase.from('team_members').select('*'),
+                    supabase.from('portfolio_team_members').select('*')
+                ]);
+
+                if (pRes.data) {
+                    setPortfolios(pRes.data.map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        shortName: p.short_name,
+                        icon: p.icon,
+                        color: p.color,
+                        gradient: p.gradient,
+                        description: p.description,
+                        companyName: p.company_name,
+                        website: p.website,
+                        industry: p.industry,
+                        logoUrl: p.logo_url,
+                        createdAt: p.created_at,
+                        updatedAt: p.updated_at
+                    })));
+                }
+
+                if (prRes.data) {
+                    setProjects(prRes.data.map(p => ({
+                        id: p.id,
+                        portfolioId: p.portfolio_id,
+                        name: p.name,
+                        shortName: p.short_name,
+                        description: p.description,
+                        manager: p.manager,
+                        status: p.status,
+                        priority: p.priority,
+                        progress: p.progress,
+                        deadline: p.deadline,
+                        color: p.color,
+                        gradient: p.gradient,
+                        icon: p.icon,
+                        tags: p.tags,
+                        createdAt: p.created_at,
+                        updatedAt: p.updated_at
+                    })));
+                }
+
+                if (tRes.data) {
+                    setTasks(tRes.data.map(t => ({
+                        id: t.id,
+                        projectId: t.project_id,
+                        title: t.title,
+                        description: t.description,
+                        status: t.status,
+                        priority: t.priority,
+                        assignee: t.assignee,
+                        dueDate: t.due_date,
+                        completed: t.completed,
+                        tags: t.tags,
+                        estimatedHours: t.estimated_hours,
+                        actualHours: t.actual_hours,
+                        createdAt: t.created_at,
+                        updatedAt: t.updated_at
+                    })));
+                }
+
+                if (tmRes.data) {
+                    setTeamMembers(tmRes.data.map(m => ({
+                        id: m.id,
+                        firstName: m.first_name,
+                        lastName: m.last_name,
+                        email: m.email,
+                        role: m.role,
+                        avatarUrl: m.avatar_url,
+                        status: m.status || 'active',
+                        specialties: m.specialties || [],
+                        createdAt: m.created_at,
+                        updatedAt: m.updated_at
+                    })));
+                }
+
+                // We'll store ptm relations in a ref or state if needed for faster lookup
+                // For now, we'll just use tmRes and ptmRes to filter in the utility function
+                // Let's add a state for relations
+                setPortfolioRelations(ptmRes.data || []);
+
+                setCurrentUser(prev => ({
+                    ...prev,
+                    firstName: user.name?.split(' ')[0] || '',
+                    lastName: user.name?.split(' ').slice(1).join(' ') || '',
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    avatarUrl: user.avatarUrl
+                }));
+
+            } catch (error) {
+                console.error('Error fetching data from Supabase:', error);
+            } finally {
+                setIsLoaded(true);
             }
-        } catch (error) {
-            console.error('Error loading BLC data from localStorage:', error);
-        }
-        setIsLoaded(true);
-    }, []);
+        };
 
-    // Save data to localStorage whenever it changes
-    useEffect(() => {
-        if (isLoaded) {
-            const dataToSave: BLCData = {
-                portfolios,
-                projects,
-                tasks,
-                clients,
-                teamMembers,
-                invoices,
-                version: '1.0',
-                lastUpdated: new Date().toISOString(),
-                user: currentUser
-            };
-            localStorage.setItem('blc_data', JSON.stringify(dataToSave));
-        }
-    }, [isLoaded, portfolios, projects, tasks, clients, teamMembers, invoices, currentUser]);
+        fetchData();
+    }, [user]);
 
     // ============================================
     // PORTFOLIO CRUD
     // ============================================
 
-    const addPortfolio = (portfolio: Omit<Portfolio, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const now = new Date().toISOString();
-        const newPortfolio: Portfolio = {
-            ...portfolio,
-            id: `portfolio-${Date.now()}`,
-            createdAt: now,
-            updatedAt: now,
-        };
+    const addPortfolio = async (portfolio: Omit<Portfolio, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) throw new Error('User not authenticated');
+
+        const { data, error } = await supabase
+            .from('portfolios')
+            .insert([{
+                ...portfolio,
+                user_id: user.id
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding portfolio:', error);
+            throw error;
+        }
+
+        const newPortfolio = data as unknown as Portfolio;
         setPortfolios(prev => [...prev, newPortfolio]);
         return newPortfolio;
     };
 
-    const updatePortfolio = (id: string, updates: Partial<Portfolio>) => {
+    const updatePortfolio = async (id: string, updates: Partial<Portfolio>) => {
+        const { error } = await supabase
+            .from('portfolios')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating portfolio:', error);
+            return;
+        }
+
         setPortfolios(prev => prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
     };
 
-    const deletePortfolio = (id: string) => {
+    const deletePortfolio = async (id: string) => {
+        const { error } = await supabase
+            .from('portfolios')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting portfolio:', error);
+            return;
+        }
+
         setPortfolios(prev => prev.filter(p => p.id !== id));
-        // Also delete related projects and tasks
-        const portfolioProjects = projects.filter(p => p.portfolioId === id);
-        portfolioProjects.forEach(project => deleteProject(project.id));
+        setProjects(prev => prev.filter(p => p.portfolioId !== id));
+        // Tasks will be deleted by Cascade in Supabase
     };
 
     const getPortfolioById = (id: string) => portfolios.find(p => p.id === id);
@@ -196,26 +320,80 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // PROJECT CRUD
     // ============================================
 
-    const addProject = (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const now = new Date().toISOString();
+    const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+        const { data, error } = await supabase
+            .from('projects')
+            .insert([{
+                name: project.name,
+                portfolio_id: project.portfolioId,
+                short_name: project.shortName || getInitials(project.name),
+                description: project.description,
+                manager: project.manager,
+                status: project.status,
+                priority: project.priority,
+                progress: project.progress,
+                deadline: project.deadline,
+                color: project.color,
+                gradient: project.gradient,
+                icon: project.icon,
+                tags: project.tags
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding project:', error);
+            throw error;
+        }
+
         const newProject: Project = {
-            ...project,
-            shortName: project.shortName || getInitials(project.name),
-            id: `project-${Date.now()}`,
-            createdAt: now,
-            updatedAt: now,
+            id: data.id,
+            portfolioId: data.portfolio_id,
+            name: data.name,
+            shortName: data.short_name,
+            description: data.description,
+            manager: data.manager,
+            status: data.status,
+            priority: data.priority,
+            progress: data.progress,
+            deadline: data.deadline,
+            color: data.color,
+            gradient: data.gradient,
+            icon: data.icon,
+            tags: data.tags,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
         };
         setProjects(prev => [...prev, newProject]);
         return newProject;
     };
 
-    const updateProject = (id: string, updates: Partial<Project>) => {
+    const updateProject = async (id: string, updates: Partial<Project>) => {
+        const { error } = await supabase
+            .from('projects')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating project:', error);
+            return;
+        }
+
         setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
     };
 
-    const deleteProject = (id: string) => {
+    const deleteProject = async (id: string) => {
+        const { error } = await supabase
+            .from('projects')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting project:', error);
+            return;
+        }
+
         setProjects(prev => prev.filter(p => p.id !== id));
-        // Also delete related tasks
         setTasks(prev => prev.filter(t => t.projectId !== id));
     };
 
@@ -229,23 +407,74 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // TASK CRUD
     // ============================================
 
-    const addTask = (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const now = new Date().toISOString();
+    const addTask = async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+        const { data, error } = await supabase
+            .from('tasks')
+            .insert([{
+                title: task.title,
+                project_id: task.projectId,
+                description: task.description,
+                status: task.status,
+                priority: task.priority,
+                assignee: task.assignee,
+                due_date: task.dueDate,
+                completed: task.completed,
+                tags: task.tags,
+                estimated_hours: task.estimatedHours,
+                actual_hours: task.actualHours
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding task:', error);
+            throw error;
+        }
+
         const newTask: Task = {
-            ...task,
-            id: `task-${Date.now()}`,
-            createdAt: now,
-            updatedAt: now,
+            id: data.id,
+            projectId: data.project_id,
+            title: data.title,
+            description: data.description,
+            status: data.status,
+            priority: data.priority,
+            assignee: data.assignee,
+            dueDate: data.due_date,
+            completed: data.completed,
+            tags: data.tags,
+            estimatedHours: data.estimated_hours,
+            actualHours: data.actual_hours,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
         };
         setTasks(prev => [...prev, newTask]);
         return newTask;
     };
 
-    const updateTask = (id: string, updates: Partial<Task>) => {
+    const updateTask = async (id: string, updates: Partial<Task>) => {
+        const { error } = await supabase
+            .from('tasks')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating task:', error);
+            return;
+        }
+
         setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t));
     };
 
-    const deleteTask = (id: string) => {
+    const deleteTask = async (id: string) => {
+        const { error } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting task:', error);
+            return;
+        }
         setTasks(prev => prev.filter(t => t.id !== id));
     };
 
@@ -282,6 +511,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const getClientById = (id: string) => clients.find(c => c.id === id);
 
     // ============================================
+    // TEAM MEMBER CRUD
+    // ============================================
+
+    // Team Member CRUD (Partial Implementation for now)
+    const addTeamMember = async (member: Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) throw new Error('User not authenticated');
+        const { data, error } = await supabase.from('team_members').insert([{ ...member, user_id: user.id }]).select().single();
+        if (error) throw error;
+        const newMember = data as unknown as TeamMember;
+        setTeamMembers(prev => [...prev, newMember]);
+        return newMember;
+    };
+
+    const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
+        const { error } = await supabase.from('team_members').update(updates).eq('id', id);
+        if (error) throw error;
+        setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    };
+
+    const deleteTeamMember = async (id: string) => {
+        const { error } = await supabase.from('team_members').delete().eq('id', id);
+        if (error) throw error;
+        setTeamMembers(prev => prev.filter(m => m.id !== id));
+    };
+
+    const getTeamMembersByPortfolio = (portfolioId: string): TeamMember[] => {
+        const memberIds = portfolioRelations
+            .filter(r => r.portfolio_id === portfolioId)
+            .map(r => r.member_id);
+        return teamMembers.filter(m => memberIds.includes(m.id));
+    };
+
+    // ============================================
     // USER PROFILE CRUD
     // ============================================
 
@@ -301,46 +563,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // ============================================
 
     const value: DataContextType = {
-        // State
         portfolios,
         projects,
         tasks,
         clients,
         teamMembers,
         invoices,
-
-        // Portfolio
         addPortfolio,
         updatePortfolio,
         deletePortfolio,
         getPortfolioById,
-
-        // Project
         addProject,
         updateProject,
         deleteProject,
         getProjectById,
         getProjectsByPortfolio,
-
-        // Task
         addTask,
         updateTask,
         deleteTask,
         getTaskById,
         getTasksByProject,
-
-        // Client
         addClient,
         updateClient,
         deleteClient,
         getClientById,
-
-        // User Profile
+        addTeamMember,
+        updateTeamMember,
+        deleteTeamMember,
+        getTeamMembersByPortfolio,
         currentUser,
         updateUserProfile,
-
-        // Utility
-        isLoaded,
+        isLoaded
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -90,21 +90,26 @@ export default function PortfolioPage() {
     const [isPortfolioProfileOpen, setIsPortfolioProfileOpen] = useState(false);
     const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
 
-    const handleAddPortfolio = () => {
+    const handleAddPortfolio = async () => {
         if (!newPortfolioName.trim()) return;
 
-        const newPortfolio = addPortfolio({
-            name: newPortfolioName,
-            shortName: newPortfolioName.substring(0, 3).toUpperCase(),
-            icon: '📁',
-            color: '#3b82f6',
-            gradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
-        });
+        try {
+            const newPortfolio = await addPortfolio({
+                name: newPortfolioName,
+                shortName: newPortfolioName.substring(0, 3).toUpperCase(),
+                icon: '📁',
+                color: '#3b82f6',
+                gradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
+            });
 
-        setSelectedPortfolio(newPortfolio);
-        setNewPortfolioName('');
-        setIsAddingPortfolio(false);
-        setShowPortfolioDropdown(false);
+            setSelectedPortfolio(newPortfolio);
+            setNewPortfolioName('');
+            setIsAddingPortfolio(false);
+            setShowPortfolioDropdown(false);
+        } catch (error) {
+            console.error('Error adding portfolio:', error);
+            alert('Error al crear el portfolio. Por favor intenta de nuevo.');
+        }
     };
 
     // Get projects filtered by selected portfolio AND search query

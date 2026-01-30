@@ -18,11 +18,11 @@ export default function LoginPage() {
         setIsSubmitting(true);
 
         try {
-            const success = await login(email, password);
+            const { success, error } = await login(email, password);
             if (success) {
                 router.push('/portfolio');
             } else {
-                setError('Credenciales incorrectas. Por favor intenta de nuevo.');
+                setError(error || 'Credenciales incorrectas. Por favor intenta de nuevo.');
             }
         } catch (err) {
             setError('Ocurrió un error al intentar iniciar sesión.');
