@@ -85,6 +85,9 @@ const INITIAL_USER: UserProfile = {
     email: '',
     role: 'Panel Senior',
     avatarUrl: '',
+    bio: '',
+    phone: '',
+    location: '',
     language: 'es',
     updatedAt: new Date().toISOString()
 };
@@ -124,7 +127,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 // ============================================
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    const { user } = useAuth();
+    const { user, refreshProfile } = useAuth();
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -161,12 +164,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const fetchData = async () => {
             setIsLoaded(false);
             try {
-                const [pRes, prRes, tRes, tmRes, ptmRes] = await Promise.all([
+                const [pRes, prRes, tRes, tmRes, ptmRes, uRes] = await Promise.all([
                     supabase.from('portfolios').select('*'),
                     supabase.from('projects').select('*'),
                     supabase.from('tasks').select('*'),
                     supabase.from('team_members').select('*'),
-                    supabase.from('portfolio_team_members').select('*')
+                    supabase.from('portfolio_team_members').select('*'),
+                    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
                 ]);
 
                 if (pRes.data) {
@@ -243,22 +247,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
 
                 // We'll store ptm relations in a ref or state if needed for faster lookup
-                // For now, we'll just use tmRes and ptmRes to filter in the utility function
-                // Let's add a state for relations
                 setPortfolioRelations(ptmRes.data || []);
 
+                // Profile Sync - Favor DB data over Auth context data
+                const profile = uRes.data;
                 setCurrentUser({
-                    firstName: (user as any).firstName || user.name?.split(' ')[0] || '',
-                    lastName: (user as any).lastName || user.name?.split(' ').slice(1).join(' ') || '',
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    avatarUrl: user.avatarUrl,
-                    bio: (user as any).bio || '',
-                    phone: (user as any).phone || '',
-                    location: (user as any).location || '',
-                    language: (user as any).language || 'es',
-                    updatedAt: new Date().toISOString()
+                    firstName: profile?.first_name || (user as any).firstName || user.name?.split(' ')[0] || '',
+                    lastName: profile?.last_name || (user as any).lastName || user.name?.split(' ').slice(1).join(' ') || '',
+                    name: profile?.name || user.name,
+                    email: profile?.email || user.email,
+                    role: profile?.role || user.role,
+                    avatarUrl: profile?.avatar_url || user.avatarUrl,
+                    bio: profile?.bio || (user as any).bio || '',
+                    phone: profile?.phone || (user as any).phone || '',
+                    location: profile?.location || (user as any).location || '',
+                    language: profile?.language || (user as any).language || 'es',
+                    updatedAt: profile?.updated_at || new Date().toISOString()
                 });
 
             } catch (error) {
@@ -667,37 +671,56 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const updateUserProfile = async (updates: Partial<UserProfile>) => {
         if (!user) return;
 
-        // Map updates to snake_case for Supabase
-        const mappedUpdates: any = {};
-        if (updates.name !== undefined) mappedUpdates.name = updates.name;
-        if (updates.firstName !== undefined) mappedUpdates.first_name = updates.firstName;
-        if (updates.lastName !== undefined) mappedUpdates.last_name = updates.lastName;
-        if (updates.role !== undefined) mappedUpdates.role = updates.role;
-        if (updates.avatarUrl !== undefined) mappedUpdates.avatar_url = updates.avatarUrl;
-        if (updates.bio !== undefined) mappedUpdates.bio = updates.bio;
-        if (updates.phone !== undefined) mappedUpdates.phone = updates.phone;
-        if (updates.location !== undefined) mappedUpdates.location = updates.location;
-        if (updates.language !== undefined) mappedUpdates.language = updates.language;
+        // Calculate fallbacks from current state to ensure full object for upsert
+        const firstName = updates.firstName !== undefined ? updates.firstName : currentUser.firstName;
+        const lastName = updates.lastName !== undefined ? updates.lastName : currentUser.lastName;
 
-        mappedUpdates.updated_at = new Date().toISOString();
+        // Use a provided name, or calculate it, or fallback to auth user name
+        const fullName = updates.name !== undefined
+            ? updates.name
+            : (firstName || lastName)
+                ? `${firstName} ${lastName}`.trim()
+                : (currentUser.name && currentUser.name !== 'Cargando...')
+                    ? currentUser.name
+                    : (user.name || 'Usuario');
+
+        // Map updates to snake_case for Supabase
+        const mappedUpdates: any = {
+            id: user.id,
+            name: fullName,
+            first_name: firstName,
+            last_name: lastName,
+            role: updates.role !== undefined ? updates.role : currentUser.role,
+            avatar_url: updates.avatarUrl !== undefined ? updates.avatarUrl : currentUser.avatarUrl,
+            bio: updates.bio !== undefined ? updates.bio : currentUser.bio,
+            phone: updates.phone !== undefined ? updates.phone : currentUser.phone,
+            location: updates.location !== undefined ? updates.location : currentUser.location,
+            language: updates.language !== undefined ? updates.language : currentUser.language,
+            updated_at: new Date().toISOString()
+        };
 
         const { error } = await supabase
             .from('profiles')
-            .update(mappedUpdates)
-            .eq('id', user.id);
+            .upsert(mappedUpdates);
 
         if (error) {
             console.error('Error updating user profile:', error);
-            // Even if DB fails, update local state for immediate feedback
+            throw error;
         }
 
-        setCurrentUser(prev => {
-            const updated = { ...prev, ...updates, updatedAt: new Date().toISOString() };
-            if (updates.firstName || updates.lastName) {
-                updated.name = `${updated.firstName} ${updated.lastName}`.trim();
-            }
-            return updated;
-        });
+        // Refresh AuthContext to keep user object in sync
+        if (refreshProfile) {
+            await refreshProfile();
+        }
+
+        setCurrentUser(prev => ({
+            ...prev,
+            ...updates,
+            firstName,
+            lastName,
+            name: fullName,
+            updatedAt: new Date().toISOString()
+        }));
     };
 
     // ============================================

@@ -15,17 +15,29 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
     const { t } = useLanguage();
 
     const [formData, setFormData] = useState({ ...currentUser });
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             setFormData({ ...currentUser });
+            setError(null);
         }
     }, [isOpen, currentUser]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        updateUserProfile(formData);
-        onClose();
+        setIsSaving(true);
+        setError(null);
+        try {
+            await updateUserProfile(formData);
+            onClose();
+        } catch (err: any) {
+            console.error('Error saving profile:', err);
+            setError(err.message || 'Error al guardar el perfil. Intenta de nuevo.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -69,6 +81,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                 </header>
 
                 <form className={styles.modalForm} onSubmit={handleSubmit} style={{ padding: '2rem' }}>
+                    {error && (
+                        <div style={{
+                            padding: '12px 16px',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            borderRadius: '12px',
+                            color: '#ef4444',
+                            fontSize: '0.9rem',
+                            marginBottom: '1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            <span>⚠️</span> {error}
+                        </div>
+                    )}
                     <div style={{
                         display: 'flex',
                         gap: '2.5rem',
@@ -225,20 +253,39 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                         paddingTop: '2rem',
                         borderTop: '1px solid hsla(var(--accent-primary) / 0.1)'
                     }}>
-                        <button type="button" onClick={onClose} style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--text-secondary)',
-                            cursor: 'pointer',
-                            fontWeight: '500',
-                            padding: '0.8rem 1.5rem'
-                        }}>{t('modal.cancel') || 'Cancelar'}</button>
-                        <button type="submit" className="btn-primary" style={{
-                            padding: '1rem 2.5rem',
-                            borderRadius: '14px',
-                            fontWeight: '600',
-                            boxShadow: '0 10px 20px hsla(var(--accent-primary) / 0.2)'
-                        }}>{t('common.save') || 'Guardar Perfil'}</button>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isSaving}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-secondary)',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                padding: '0.8rem 1.5rem',
+                                opacity: isSaving ? 0.5 : 1
+                            }}>
+                            {t('modal.cancel') || 'Cancelar'}
+                        </button>
+                        <button
+                            type="submit"
+                            className="btn-primary"
+                            disabled={isSaving}
+                            style={{
+                                padding: '1rem 2.5rem',
+                                borderRadius: '14px',
+                                fontWeight: '600',
+                                boxShadow: '0 10px 20px hsla(var(--accent-primary) / 0.2)',
+                                opacity: isSaving ? 0.7 : 1,
+                                cursor: isSaving ? 'wait' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                            {isSaving && <span style={{ width: '16px', height: '16px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }} />}
+                            {isSaving ? 'Guardando...' : (t('common.save') || 'Guardar Perfil')}
+                        </button>
                     </div>
                 </form>
             </div>

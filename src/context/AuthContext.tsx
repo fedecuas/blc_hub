@@ -11,6 +11,12 @@ interface User {
     name: string;
     role: string;
     avatarUrl?: string;
+    firstName?: string;
+    lastName?: string;
+    bio?: string;
+    phone?: string;
+    location?: string;
+    language?: 'en' | 'es';
 }
 
 interface AuthContextType {
@@ -20,6 +26,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
     register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -124,13 +131,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
     };
 
+    const refreshProfile = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+            setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                role: profile?.role || 'Panel Senior',
+                avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+                firstName: profile?.first_name || '',
+                lastName: profile?.last_name || '',
+                bio: profile?.bio || '',
+                phone: profile?.phone || '',
+                location: profile?.location || '',
+                language: profile?.language || 'es'
+            } as any);
+        }
+    };
+
     const logout = async () => {
         await supabase.auth.signOut();
         router.push('/login');
     };
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, refreshProfile } as any}>
             {children}
         </AuthContext.Provider>
     );
