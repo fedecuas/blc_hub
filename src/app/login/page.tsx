@@ -18,13 +18,14 @@ export default function LoginPage() {
         setDebugInfo({ status: 'Probando...', time: Date.now() });
         const start = Date.now();
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/health`);
+            // Use a simpler fetch to just check reachability
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}`, { mode: 'no-cors' });
             const end = Date.now();
             setDebugInfo({
                 url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Configurada ✅' : 'NO CONFIGURADA ❌',
                 key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Configurada ✅' : 'NO CONFIGURADA ❌',
                 latencia: `${end - start}ms`,
-                status: res.status === 200 ? 'Conectado 🟢' : `Error ${res.status} 🔴`
+                status: 'Servidor Alcanzado 🟢'
             });
         } catch (err: any) {
             setDebugInfo({
@@ -32,6 +33,14 @@ export default function LoginPage() {
                 status: 'Error de Red / Bloqueado ❌',
                 error: err.message
             });
+        }
+    };
+
+    const handleHardReset = () => {
+        if (confirm('Esto limpiará la memoria del navegador para solucionar errores de conexión. ¿Continuar?')) {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.reload();
         }
     };
 
@@ -227,7 +236,23 @@ export default function LoginPage() {
                             <div>Estado API: {debugInfo.status}</div>
                             {debugInfo.latencia && <div>Latencia: {debugInfo.latencia}</div>}
                             {debugInfo.error && <div style={{ color: '#ef4444' }}>Error: {debugInfo.error}</div>}
-                            <div style={{ marginTop: '0.5rem', opacity: 0.5, fontSize: '0.6rem' }}>
+                            <button
+                                onClick={handleHardReset}
+                                style={{
+                                    marginTop: '0.5rem',
+                                    padding: '0.4rem',
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Limpiar Errores y Reintentar
+                            </button>
+                            <div style={{ marginTop: '0.3rem', opacity: 0.5, fontSize: '0.6rem' }}>
                                 Si "Estado API" es Error de Red, revisa si tienes AdBlock activo.
                             </div>
                         </div>

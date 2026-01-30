@@ -143,9 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(true);
         try {
             console.log('[AuthContext] Attempting login for:', email);
-            console.log('[AuthContext] Timeout guard set to 45 seconds...');
+            console.log('[AuthContext] Timeout guard set to 90 seconds...');
 
-            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 45000);
+            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 90000);
 
             if (result.error) {
                 console.error('[AuthContext] Supabase returned error:', result.error.message);
