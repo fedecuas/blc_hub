@@ -52,7 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const checkSession = async () => {
             console.log('[AuthContext] Starting session check...');
             try {
-                const sessionRes = await withAuthTimeout<any>(supabase.auth.getSession());
+                // Increase startup timeout to 20s to prevent premature logout on slow networks
+                const sessionRes = await withAuthTimeout<any>(supabase.auth.getSession(), 20000);
                 const session = sessionRes?.data?.session;
 
                 if (session?.user) {
@@ -101,13 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // PERMANENT FIX: If the session check hangs or fails repeatedly, 
                 // it's likely corrupted local storage. We clear it to allow a fresh start.
                 if (err.message === 'AUTH_TIMEOUT') {
-                    console.warn('[AuthContext] Auto-recovery: Clearing corrupted storage keys due to timeout');
-                    const keys = Object.keys(localStorage);
-                    keys.forEach(key => {
-                        if (key.includes('supabase.auth.token')) {
-                            localStorage.removeItem(key);
-                        }
-                    });
+                    console.warn('[AuthContext] Session check timed out. User might need to re-login if network is extremely slow.');
                 }
             } finally {
                 setIsLoading(false);
