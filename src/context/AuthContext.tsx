@@ -141,26 +141,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
         setIsLoading(true);
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        setIsLoading(false);
-        if (error) return { success: false, error: error.message };
-        return { success: true };
+        try {
+            console.log('[AuthContext] Attempting login with 8s timeout...');
+            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 8000);
+            if (result.error) return { success: false, error: result.error.message };
+            return { success: true };
+        } catch (err: any) {
+            console.error('[AuthContext] Login failed or timed out:', err);
+            return { success: false, error: err.message === 'AUTH_TIMEOUT' ? 'La conexión es lenta. Intenta de nuevo.' : 'Error inesperado.' };
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
         setIsLoading(true);
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: name,
+        try {
+            const result = await withAuthTimeout<any>(supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name,
+                    }
                 }
-            }
-        });
-        setIsLoading(false);
-        if (error) return { success: false, error: error.message };
-        return { success: true };
+            }), 10000);
+            if (result.error) return { success: false, error: result.error.message };
+            return { success: true };
+        } catch (err: any) {
+            console.error('[AuthContext] Registration failed or timed out:', err);
+            return { success: false, error: 'Error al registrar. Revisa tu conexión.' };
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const refreshProfile = async () => {
@@ -231,7 +244,9 @@ export function AuthGuard({ children }: { children: ReactNode }) {
         }
     }, [isAuthenticated, isLoading, pathname, router]);
 
-    if (isLoading && pathname !== '/login') {
+    // If we are on the login page, we MUST show it even if we are still checking session
+    // This prevented the lockout the user experienced
+    if (isLoading && !pathname.startsWith('/login')) {
         return (
             <div style={{
                 height: '100vh',
@@ -240,7 +255,9 @@ export function AuthGuard({ children }: { children: ReactNode }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 background: '#0f172a',
-                color: 'white'
+                color: 'white',
+                zIndex: 10000,
+                position: 'fixed'
             }}>
                 <div className="loader">Cargando BLC System...</div>
             </div>
