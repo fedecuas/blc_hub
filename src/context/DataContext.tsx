@@ -268,7 +268,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase
             .from('portfolios')
             .insert([{
-                ...portfolio,
+                name: portfolio.name,
+                short_name: portfolio.shortName,
+                icon: portfolio.icon,
+                color: portfolio.color,
+                gradient: portfolio.gradient,
+                description: portfolio.description,
+                company_name: portfolio.companyName,
+                website: portfolio.website,
+                industry: portfolio.industry,
+                logo_url: portfolio.logoUrl,
                 user_id: user.id
             }])
             .select()
@@ -279,15 +288,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
             throw error;
         }
 
-        const newPortfolio = data as unknown as Portfolio;
+        const newPortfolio: Portfolio = {
+            id: data.id,
+            name: data.name,
+            shortName: data.short_name,
+            icon: data.icon,
+            color: data.color,
+            gradient: data.gradient,
+            description: data.description,
+            companyName: data.company_name,
+            website: data.website,
+            industry: data.industry,
+            logoUrl: data.logo_url,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
+        };
         setPortfolios(prev => [...prev, newPortfolio]);
         return newPortfolio;
     };
 
     const updatePortfolio = async (id: string, updates: Partial<Portfolio>) => {
+        // Map updates to snake_case
+        const mappedUpdates: any = {};
+        if (updates.name !== undefined) mappedUpdates.name = updates.name;
+        if (updates.shortName !== undefined) mappedUpdates.short_name = updates.shortName;
+        if (updates.icon !== undefined) mappedUpdates.icon = updates.icon;
+        if (updates.color !== undefined) mappedUpdates.color = updates.color;
+        if (updates.gradient !== undefined) mappedUpdates.gradient = updates.gradient;
+        if (updates.description !== undefined) mappedUpdates.description = updates.description;
+        if (updates.companyName !== undefined) mappedUpdates.company_name = updates.companyName;
+        if (updates.website !== undefined) mappedUpdates.website = updates.website;
+        if (updates.industry !== undefined) mappedUpdates.industry = updates.industry;
+        if (updates.logoUrl !== undefined) mappedUpdates.logo_url = updates.logoUrl;
+
         const { error } = await supabase
             .from('portfolios')
-            .update(updates)
+            .update(mappedUpdates)
             .eq('id', id);
 
         if (error) {
@@ -369,9 +405,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const updateProject = async (id: string, updates: Partial<Project>) => {
+        const mappedUpdates: any = {};
+        if (updates.name !== undefined) mappedUpdates.name = updates.name;
+        if (updates.portfolioId !== undefined) mappedUpdates.portfolio_id = updates.portfolioId;
+        if (updates.shortName !== undefined) mappedUpdates.short_name = updates.shortName;
+        if (updates.description !== undefined) mappedUpdates.description = updates.description;
+        if (updates.manager !== undefined) mappedUpdates.manager = updates.manager;
+        if (updates.status !== undefined) mappedUpdates.status = updates.status;
+        if (updates.priority !== undefined) mappedUpdates.priority = updates.priority;
+        if (updates.progress !== undefined) mappedUpdates.progress = updates.progress;
+        if (updates.deadline !== undefined) mappedUpdates.deadline = updates.deadline;
+        if (updates.color !== undefined) mappedUpdates.color = updates.color;
+        if (updates.gradient !== undefined) mappedUpdates.gradient = updates.gradient;
+        if (updates.icon !== undefined) mappedUpdates.icon = updates.icon;
+        if (updates.tags !== undefined) mappedUpdates.tags = updates.tags;
+
         const { error } = await supabase
             .from('projects')
-            .update(updates)
+            .update(mappedUpdates)
             .eq('id', id);
 
         if (error) {
@@ -452,9 +503,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const updateTask = async (id: string, updates: Partial<Task>) => {
+        const mappedUpdates: any = {};
+        if (updates.title !== undefined) mappedUpdates.title = updates.title;
+        if (updates.projectId !== undefined) mappedUpdates.project_id = updates.projectId;
+        if (updates.description !== undefined) mappedUpdates.description = updates.description;
+        if (updates.status !== undefined) mappedUpdates.status = updates.status;
+        if (updates.priority !== undefined) mappedUpdates.priority = updates.priority;
+        if (updates.assignee !== undefined) mappedUpdates.assignee = updates.assignee;
+        if (updates.dueDate !== undefined) mappedUpdates.due_date = updates.dueDate;
+        if (updates.completed !== undefined) mappedUpdates.completed = updates.completed;
+        if (updates.tags !== undefined) mappedUpdates.tags = updates.tags;
+        if (updates.estimatedHours !== undefined) mappedUpdates.estimated_hours = updates.estimatedHours;
+        if (updates.actualHours !== undefined) mappedUpdates.actual_hours = updates.actualHours;
+
         const { error } = await supabase
             .from('tasks')
-            .update(updates)
+            .update(mappedUpdates)
             .eq('id', id);
 
         if (error) {
@@ -517,17 +581,57 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Team Member CRUD (Partial Implementation for now)
     const addTeamMember = async (member: Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (!user) throw new Error('User not authenticated');
-        const { data, error } = await supabase.from('team_members').insert([{ ...member, user_id: user.id }]).select().single();
+        const { data, error } = await supabase.from('team_members').insert([{
+            first_name: member.firstName,
+            last_name: member.lastName,
+            email: member.email,
+            phone: member.phone,
+            role: member.role,
+            department: member.department,
+            specialties: member.specialties,
+            avatar_url: member.avatarUrl,
+            status: member.status,
+            hourly_rate: member.hourlyRate,
+            user_id: user.id
+        }]).select().single();
+
         if (error) throw error;
-        const newMember = data as unknown as TeamMember;
+
+        const newMember: TeamMember = {
+            id: data.id,
+            firstName: data.first_name,
+            lastName: data.last_name,
+            email: data.email,
+            phone: data.phone,
+            role: data.role,
+            department: data.department,
+            specialties: data.specialties,
+            avatarUrl: data.avatar_url,
+            status: data.status,
+            hourlyRate: data.hourly_rate,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
+        };
         setTeamMembers(prev => [...prev, newMember]);
         return newMember;
     };
 
     const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
-        const { error } = await supabase.from('team_members').update(updates).eq('id', id);
+        const mappedUpdates: any = {};
+        if (updates.firstName !== undefined) mappedUpdates.first_name = updates.firstName;
+        if (updates.lastName !== undefined) mappedUpdates.last_name = updates.lastName;
+        if (updates.email !== undefined) mappedUpdates.email = updates.email;
+        if (updates.phone !== undefined) mappedUpdates.phone = updates.phone;
+        if (updates.role !== undefined) mappedUpdates.role = updates.role;
+        if (updates.department !== undefined) mappedUpdates.department = updates.department;
+        if (updates.specialties !== undefined) mappedUpdates.specialties = updates.specialties;
+        if (updates.avatarUrl !== undefined) mappedUpdates.avatar_url = updates.avatarUrl;
+        if (updates.status !== undefined) mappedUpdates.status = updates.status;
+        if (updates.hourlyRate !== undefined) mappedUpdates.hourly_rate = updates.hourlyRate;
+
+        const { error } = await supabase.from('team_members').update(mappedUpdates).eq('id', id);
         if (error) throw error;
-        setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+        setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates, updatedAt: new Date().toISOString() } : m));
     };
 
     const deleteTeamMember = async (id: string) => {
