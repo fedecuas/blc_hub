@@ -142,13 +142,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
         setIsLoading(true);
         try {
-            console.log('[AuthContext] Attempting login with 8s timeout...');
-            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 8000);
-            if (result.error) return { success: false, error: result.error.message };
+            console.log('[AuthContext] Attempting login for:', email);
+            console.log('[AuthContext] Timeout guard set to 20 seconds...');
+
+            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 20000);
+
+            if (result.error) {
+                console.error('[AuthContext] Supabase returned error:', result.error.message);
+                return { success: false, error: result.error.message };
+            }
+
+            console.log('[AuthContext] Login successful.');
             return { success: true };
         } catch (err: any) {
-            console.error('[AuthContext] Login failed or timed out:', err);
-            return { success: false, error: err.message === 'AUTH_TIMEOUT' ? 'La conexión es lenta. Intenta de nuevo.' : 'Error inesperado.' };
+            console.error('[AuthContext] Login exception:', err.message);
+            if (err.message === 'AUTH_TIMEOUT') {
+                return { success: false, error: 'La conexión con el servidor es lenta. Por favor verifica tu internet o intenta de nuevo.' };
+            }
+            return { success: false, error: 'Ocurrió un error inesperado al iniciar sesión.' };
         } finally {
             setIsLoading(false);
         }
