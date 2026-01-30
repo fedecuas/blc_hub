@@ -47,8 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         email: session.user.email || '',
                         name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
                         role: profile?.role || 'Panel Senior',
-                        avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
-                    });
+                        avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+                        // Add extended fields for sync
+                        firstName: profile?.first_name || '',
+                        lastName: profile?.last_name || '',
+                        bio: profile?.bio || '',
+                        phone: profile?.phone || '',
+                        location: profile?.location || '',
+                        language: profile?.language || 'es'
+                    } as any);
                 }
             } catch (err) {
                 console.error('Error checking session:', err);
@@ -73,8 +80,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         email: session.user.email || '',
                         name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
                         role: profile?.role || 'Panel Senior',
-                        avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
-                    });
+                        avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+                        // Add extended fields for sync
+                        firstName: profile?.first_name || '',
+                        lastName: profile?.last_name || '',
+                        bio: profile?.bio || '',
+                        phone: profile?.phone || '',
+                        location: profile?.location || '',
+                        language: profile?.language || 'es'
+                    } as any);
                 } else {
                     setUser(null);
                 }

@@ -247,15 +247,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 // Let's add a state for relations
                 setPortfolioRelations(ptmRes.data || []);
 
-                setCurrentUser(prev => ({
-                    ...prev,
-                    firstName: user.name?.split(' ')[0] || '',
-                    lastName: user.name?.split(' ').slice(1).join(' ') || '',
+                setCurrentUser({
+                    firstName: (user as any).firstName || user.name?.split(' ')[0] || '',
+                    lastName: (user as any).lastName || user.name?.split(' ').slice(1).join(' ') || '',
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    avatarUrl: user.avatarUrl
-                }));
+                    avatarUrl: user.avatarUrl,
+                    bio: (user as any).bio || '',
+                    phone: (user as any).phone || '',
+                    location: (user as any).location || '',
+                    language: (user as any).language || 'es',
+                    updatedAt: new Date().toISOString()
+                });
 
             } catch (error) {
                 console.error('Error fetching data from Supabase:', error);

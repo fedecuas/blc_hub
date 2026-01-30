@@ -32,53 +32,91 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
 
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
-            <div className={`${styles.modalContent} glass`} onClick={e => e.stopPropagation()} style={{ maxWidth: '650px', width: '95%' }}>
-                <header className={styles.modalHeader}>
+            <div className={`${styles.modalContent} glass`} onClick={e => e.stopPropagation()}
+                style={{
+                    maxWidth: '650px',
+                    width: '95%',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    padding: '0',
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}>
+                <header className={styles.modalHeader} style={{
+                    padding: '2rem',
+                    borderBottom: '1px solid hsla(var(--accent-primary) / 0.1)',
+                    position: 'sticky',
+                    top: 0,
+                    background: 'var(--bg-glass)',
+                    backdropFilter: 'blur(10px)',
+                    zIndex: 10
+                }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         <div style={{
                             fontSize: '1.5rem',
-                            background: 'hsla(var(--accent-primary) / 0.1)',
-                            padding: '10px',
-                            borderRadius: '12px'
+                            background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-secondary)))',
+                            padding: '12px',
+                            borderRadius: '16px',
+                            color: 'white',
+                            boxShadow: '0 4px 15px hsla(var(--accent-primary) / 0.3)'
                         }}>👤</div>
                         <div>
-                            <h3 style={{ margin: 0 }}>Mi Perfil</h3>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Configura tu información personal y profesional</p>
+                            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '600' }}>Mi Perfil</h3>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', opacity: 0.8 }}>Configura tu identidad en BLC System</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className={styles.closeBtn}>&times;</button>
+                    <button onClick={onClose} className={styles.closeBtn} style={{ fontSize: '1.5rem' }}>&times;</button>
                 </header>
 
-                <form className={styles.modalForm} onSubmit={handleSubmit}>
-                    <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem', alignItems: 'center' }}>
+                <form className={styles.modalForm} onSubmit={handleSubmit} style={{ padding: '2rem' }}>
+                    <div style={{
+                        display: 'flex',
+                        gap: '2.5rem',
+                        marginBottom: '2.5rem',
+                        alignItems: 'center',
+                        background: 'hsla(var(--accent-primary) / 0.03)',
+                        padding: '1.5rem',
+                        borderRadius: '24px',
+                        border: '1px solid hsla(var(--accent-primary) / 0.05)'
+                    }}>
                         <div style={{ position: 'relative' }}>
-                            <img
-                                src={formData.avatarUrl || 'https://i.pravatar.cc/150'}
-                                alt="Profile Avatar"
-                                style={{
-                                    width: '100px',
-                                    height: '100px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover',
-                                    border: '3px solid white',
-                                    boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
-                                }}
-                            />
+                            <div style={{
+                                width: '110px',
+                                height: '110px',
+                                borderRadius: '50%',
+                                padding: '4px',
+                                background: 'linear-gradient(135deg, hsl(var(--accent-primary)), hsl(var(--accent-secondary)))',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                            }}>
+                                <img
+                                    src={formData.avatarUrl || 'https://i.pravatar.cc/150'}
+                                    alt="Profile Avatar"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: '50%',
+                                        objectFit: 'cover',
+                                        border: '3px solid white'
+                                    }}
+                                />
+                            </div>
                             <label style={{
                                 position: 'absolute',
-                                bottom: '0',
-                                right: '0',
+                                bottom: '5px',
+                                right: '5px',
                                 background: 'hsl(var(--accent-primary))',
-                                width: '30px',
-                                height: '30px',
+                                width: '32px',
+                                height: '32px',
                                 borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
                                 color: 'white',
-                                fontSize: '0.8rem',
-                                boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                                fontSize: '0.9rem',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                border: '2px solid white',
+                                transition: 'transform 0.2s'
                             }}>
                                 📷
                                 <input
@@ -100,10 +138,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                         </div>
                         <div style={{ flex: 1 }}>
                             <div className={styles.formGroup}>
-                                <label>Rol Profesional</label>
+                                <label style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.6rem', color: 'hsl(var(--accent-primary))' }}>Rol Profesional</label>
                                 <input
                                     type="text"
                                     className={styles.input}
+                                    style={{
+                                        fontSize: '1.1rem',
+                                        fontWeight: '500',
+                                        padding: '0.8rem 1.2rem',
+                                        background: 'white'
+                                    }}
                                     value={formData.role}
                                     onChange={e => setFormData({ ...formData, role: e.target.value })}
                                 />
@@ -111,12 +155,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                         <div className={styles.formGroup}>
                             <label>Nombre</label>
                             <input
                                 type="text"
                                 className={styles.input}
+                                placeholder="Tu nombre"
                                 value={formData.firstName}
                                 onChange={e => setFormData({ ...formData, firstName: e.target.value })}
                                 required
@@ -127,6 +172,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                             <input
                                 type="text"
                                 className={styles.input}
+                                placeholder="Tu apellido"
                                 value={formData.lastName}
                                 onChange={e => setFormData({ ...formData, lastName: e.target.value })}
                                 required
@@ -134,42 +180,65 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                         <div className={styles.formGroup}>
-                            <label>Email</label>
+                            <label>Email Corporativo</label>
                             <input
                                 type="email"
                                 className={styles.input}
                                 value={formData.email}
                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                                 required
+                                readOnly
+                                style={{ background: 'hsla(var(--accent-primary) / 0.02)', cursor: 'not-allowed' }}
                             />
                         </div>
                         <div className={styles.formGroup}>
-                            <label>Teléfono</label>
+                            <label>Teléfono Movil</label>
                             <input
                                 type="tel"
                                 className={styles.input}
+                                placeholder="+1 (555) 000-0000"
                                 value={formData.phone || ''}
                                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
                             />
                         </div>
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label>Biografía</label>
+                    <div className={styles.formGroup} style={{ marginBottom: '1.5rem' }}>
+                        <label>Biografía Profesional</label>
                         <textarea
                             className={styles.input}
-                            rows={3}
+                            rows={4}
+                            style={{ resize: 'none', lineHeight: '1.6' }}
                             value={formData.bio || ''}
                             onChange={e => setFormData({ ...formData, bio: e.target.value })}
-                            placeholder="Cuéntanos un poco sobre ti..."
+                            placeholder="Describe tu trayectoria y rol actual..."
                         />
                     </div>
 
-                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                        <button type="button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>{t('modal.cancel') || 'Cancelar'}</button>
-                        <button type="submit" className="btn-primary" style={{ padding: '0.8rem 2rem' }}>{t('common.save') || 'Guardar Cambios'}</button>
+                    <div style={{
+                        marginTop: '2rem',
+                        display: 'flex',
+                        gap: '1.2rem',
+                        justifyContent: 'flex-end',
+                        paddingTop: '2rem',
+                        borderTop: '1px solid hsla(var(--accent-primary) / 0.1)'
+                    }}>
+                        <button type="button" onClick={onClose} style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            padding: '0.8rem 1.5rem'
+                        }}>{t('modal.cancel') || 'Cancelar'}</button>
+                        <button type="submit" className="btn-primary" style={{
+                            padding: '1rem 2.5rem',
+                            borderRadius: '14px',
+                            fontWeight: '600',
+                            boxShadow: '0 10px 20px hsla(var(--accent-primary) / 0.2)'
+                        }}>{t('common.save') || 'Guardar Perfil'}</button>
                     </div>
                 </form>
             </div>
