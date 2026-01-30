@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -36,15 +37,24 @@ export default function LoginPage() {
         }
     };
 
-    const handleHardReset = () => {
-        if (confirm('Esto reiniciará tu conexión para solucionar errores sin borrar tu perfil. ¿Continuar?')) {
-            // Only clear Supabase-related keys to preserve the locally cached profile
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith('sb-') || key.includes('supabase')) {
-                    localStorage.removeItem(key);
-                }
-            });
+    const handleHardReset = async () => {
+        if (confirm('Esto reiniciará tu conexión para solucionar errores. ¿Continuar?')) {
+            // CRITICAL: Do NOT clear localStorage - it contains the auth session
+            // Only clear sessionStorage which may have stale temporary data
             sessionStorage.clear();
+
+            // Try to refresh the session instead of destroying it
+            try {
+                const { data, error } = await supabase.auth.refreshSession();
+                if (error) {
+                    console.error('Session refresh failed:', error);
+                    // Only if refresh fails, sign out and reload
+                    await supabase.auth.signOut();
+                }
+            } catch (err) {
+                console.error('Hard reset error:', err);
+            }
+
             window.location.reload();
         }
     };
