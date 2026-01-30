@@ -77,7 +77,8 @@ export default function PortfolioPage() {
         portfolios,
         projects,
         addPortfolio,
-        getProjectsByPortfolio
+        getProjectsByPortfolio,
+        isLoaded
     } = useDataContext();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -89,6 +90,13 @@ export default function PortfolioPage() {
     const [newPortfolioName, setNewPortfolioName] = useState('');
     const [isPortfolioProfileOpen, setIsPortfolioProfileOpen] = useState(false);
     const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
+
+    // Auto-select first portfolio when they load
+    React.useEffect(() => {
+        if (portfolios.length > 0 && !selectedPortfolio) {
+            setSelectedPortfolio(portfolios[0]);
+        }
+    }, [portfolios, selectedPortfolio]);
 
     const handleAddPortfolio = async () => {
         if (!newPortfolioName.trim()) return;
@@ -157,7 +165,7 @@ export default function PortfolioPage() {
                                 )}
                             </span>
                             <span className={styles.selectorName}>
-                                {selectedPortfolio?.name || 'Seleccionar Portafolio'}
+                                {!isLoaded ? 'Conectando...' : (selectedPortfolio?.name || 'Seleccionar Portafolio')}
                             </span>
                             <span className={styles.selectorArrow}>▼</span>
                         </button>

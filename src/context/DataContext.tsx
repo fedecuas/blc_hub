@@ -164,6 +164,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const fetchData = async () => {
             setIsLoaded(false);
             try {
+                console.log('[DataContext] Fetching data with 30s timeout...');
                 const [pRes, prRes, tRes, tmRes, ptmRes, uRes] = await withTimeout<any[]>(
                     Promise.all([
                         supabase.from('portfolios').select('*') as any,
@@ -173,7 +174,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         supabase.from('portfolio_team_members').select('*') as any,
                         supabase.from('profiles').select('*').eq('id', user.id).maybeSingle() as any
                     ]),
-                    10000
+                    30000
                 );
 
                 if (pRes?.data) {
@@ -285,46 +286,66 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addPortfolio = async (portfolio: Omit<Portfolio, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (!user) throw new Error('User not authenticated');
 
-        const { data, error } = await supabase
-            .from('portfolios')
-            .insert([{
-                name: portfolio.name,
-                short_name: portfolio.shortName,
-                icon: portfolio.icon,
-                color: portfolio.color,
-                gradient: portfolio.gradient,
-                description: portfolio.description,
-                company_name: portfolio.companyName,
-                website: portfolio.website,
-                industry: portfolio.industry,
-                logo_url: portfolio.logoUrl,
-                user_id: user.id
-            }])
-            .select()
-            .single();
+        // Optimistic update
+        const tempId = `temp-${Date.now()}`;
+        const optimisticPortfolio: Portfolio = {
+            id: tempId,
+            ...portfolio,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
 
-        if (error) {
-            console.error('Error adding portfolio:', error);
+        setPortfolios(prev => [...prev, optimisticPortfolio]);
+
+        try {
+            const { data, error } = await supabase
+                .from('portfolios')
+                .insert([{
+                    name: portfolio.name,
+                    short_name: portfolio.shortName,
+                    icon: portfolio.icon,
+                    color: portfolio.color,
+                    gradient: portfolio.gradient,
+                    description: portfolio.description,
+                    company_name: portfolio.companyName,
+                    website: portfolio.website,
+                    industry: portfolio.industry,
+                    logo_url: portfolio.logoUrl,
+                    user_id: user.id
+                }])
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error adding portfolio, rolling back:', error);
+                setPortfolios(prev => prev.filter(p => p.id !== tempId));
+                throw error;
+            }
+
+            const newPortfolio: Portfolio = {
+                id: data.id,
+                name: data.name,
+                shortName: data.short_name,
+                icon: data.icon,
+                color: data.color,
+                gradient: data.gradient,
+                description: data.description,
+                companyName: data.company_name,
+                website: data.website,
+                industry: data.industry,
+                logoUrl: data.logo_url,
+                createdAt: data.created_at,
+                updatedAt: data.updated_at
+            };
+
+            // Replace temp with real
+            setPortfolios(prev => prev.map(p => p.id === tempId ? newPortfolio : p));
+            return newPortfolio;
+        } catch (error) {
+            console.error('Add portfolio exception:', error);
+            setPortfolios(prev => prev.filter(p => p.id !== tempId));
             throw error;
         }
-
-        const newPortfolio: Portfolio = {
-            id: data.id,
-            name: data.name,
-            shortName: data.short_name,
-            icon: data.icon,
-            color: data.color,
-            gradient: data.gradient,
-            description: data.description,
-            companyName: data.company_name,
-            website: data.website,
-            industry: data.industry,
-            logoUrl: data.logo_url,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
-        };
-        setPortfolios(prev => [...prev, newPortfolio]);
-        return newPortfolio;
     };
 
     const updatePortfolio = async (id: string, updates: Partial<Portfolio>) => {
