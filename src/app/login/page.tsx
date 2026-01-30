@@ -179,9 +179,17 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <p style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '8px' }}>
-                            {error}
-                        </p>
+                        <div style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <p>{error}</p>
+                            {error.includes('lenta') && (
+                                <button
+                                    onClick={handleHardReset}
+                                    style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.7rem', padding: '0.4rem', cursor: 'pointer', fontWeight: 600 }}
+                                >
+                                    Reparar Conexión (Limpiar memoria)
+                                </button>
+                            )}
+                        </div>
                     )}
 
                     <button
