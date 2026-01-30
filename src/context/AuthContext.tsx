@@ -52,7 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const checkSession = async () => {
             console.log('[AuthContext] Starting session check...');
             try {
-                const { data: { session } } = await withAuthTimeout(supabase.auth.getSession());
+                const sessionRes = await withAuthTimeout<any>(supabase.auth.getSession());
+                const session = sessionRes?.data?.session;
 
                 if (session?.user) {
                     console.log('[AuthContext] Session found, fetching profile...');
