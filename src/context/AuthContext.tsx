@@ -62,10 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 .from('profiles')
                                 .select('*')
                                 .eq('id', session.user.id)
-                                .maybeSingle(),
+                                .maybeSingle() as any,
                             4000
                         );
-                        const profile = result.data;
+                        const profile = result?.data;
 
                         setUser({
                             id: session.user.id,

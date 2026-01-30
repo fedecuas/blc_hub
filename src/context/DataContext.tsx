@@ -164,21 +164,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const fetchData = async () => {
             setIsLoaded(false);
             try {
-                console.log('[DataContext] Fetching initial data with 10s timeout...');
                 const [pRes, prRes, tRes, tmRes, ptmRes, uRes] = await withTimeout<any[]>(
                     Promise.all([
-                        supabase.from('portfolios').select('*'),
-                        supabase.from('projects').select('*'),
-                        supabase.from('tasks').select('*'),
-                        supabase.from('team_members').select('*'),
-                        supabase.from('portfolio_team_members').select('*'),
-                        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+                        supabase.from('portfolios').select('*') as any,
+                        supabase.from('projects').select('*') as any,
+                        supabase.from('tasks').select('*') as any,
+                        supabase.from('team_members').select('*') as any,
+                        supabase.from('portfolio_team_members').select('*') as any,
+                        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle() as any
                     ]),
                     10000
                 );
 
-                if (pRes.data) {
-                    setPortfolios(pRes.data.map(p => ({
+                if (pRes?.data) {
+                    setPortfolios(pRes.data.map((p: any) => ({
                         id: p.id,
                         name: p.name,
                         shortName: p.short_name,
@@ -195,8 +194,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     })));
                 }
 
-                if (prRes.data) {
-                    setProjects(prRes.data.map(p => ({
+                if (prRes?.data) {
+                    setProjects(prRes.data.map((p: any) => ({
                         id: p.id,
                         portfolioId: p.portfolio_id,
                         name: p.name,
@@ -216,8 +215,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     })));
                 }
 
-                if (tRes.data) {
-                    setTasks(tRes.data.map(t => ({
+                if (tRes?.data) {
+                    setTasks(tRes.data.map((t: any) => ({
                         id: t.id,
                         projectId: t.project_id,
                         title: t.title,
@@ -235,8 +234,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     })));
                 }
 
-                if (tmRes.data) {
-                    setTeamMembers(tmRes.data.map(m => ({
+                if (tmRes?.data) {
+                    setTeamMembers(tmRes.data.map((m: any) => ({
                         id: m.id,
                         firstName: m.first_name,
                         lastName: m.last_name,
