@@ -33,44 +33,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for saved session
     useEffect(() => {
         const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .maybeSingle();
 
-                setUser({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
-                    role: profile?.role || 'Panel Senior',
-                    avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
-                });
+                    setUser({
+                        id: session.user.id,
+                        email: session.user.email || '',
+                        name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                        role: profile?.role || 'Panel Senior',
+                        avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
+                    });
+                }
+            } catch (err) {
+                console.error('Error checking session:', err);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
 
         checkSession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .maybeSingle();
+            try {
+                if (session?.user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .maybeSingle();
 
-                setUser({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
-                    role: profile?.role || 'Panel Senior',
-                    avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
-                });
-            } else {
-                setUser(null);
+                    setUser({
+                        id: session.user.id,
+                        email: session.user.email || '',
+                        name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                        role: profile?.role || 'Panel Senior',
+                        avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url
+                    });
+                } else {
+                    setUser(null);
+                }
+            } catch (err) {
+                console.error('Error in auth state change:', err);
             }
         });
 
