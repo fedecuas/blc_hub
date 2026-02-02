@@ -22,7 +22,6 @@ import { DataProvider } from "@/context/DataContext";
 import { AuthProvider, AuthGuard } from "@/context/AuthContext";
 import { usePathname } from 'next/navigation';
 
-// ... (previous logic)
 
 export default function RootLayout({
   children,
