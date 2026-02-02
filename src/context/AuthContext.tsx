@@ -106,21 +106,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkSession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            console.log('[AuthContext] Auth state changed:', _event);
             try {
                 if (session?.user) {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .maybeSingle();
+                    console.log('[AuthContext] User detected, fetching profile with safety timeout...');
+                    // Add safety timeout to profile fetch in state change
+                    const profileRes = await withAuthTimeout<any>(
+                        supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .maybeSingle() as any,
+                        10000
+                    );
+                    const profile = profileRes?.data;
 
                     setUser({
                         id: session.user.id,
                         email: session.user.email || '',
-                        name: profile?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                        name: profile?.name || session.user.user_metadata?.full_name || 'Usuario',
                         role: profile?.role || 'Panel Senior',
                         avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
-                        // Add extended fields for sync
                         firstName: profile?.first_name || '',
                         lastName: profile?.last_name || '',
                         bio: profile?.bio || '',
@@ -128,11 +134,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         location: profile?.location || '',
                         language: profile?.language || 'es'
                     } as any);
+                    console.log('[AuthContext] Active user profile synced.');
                 } else {
+                    console.log('[AuthContext] Session cleared.');
                     setUser(null);
                 }
             } catch (err) {
-                console.error('Error in auth state change:', err);
+                console.error('[AuthContext] Error in auth state change handling:', err);
+                // Even on profile error, if we have a session, we set the user to at least let them see the UI
+                if (session?.user) {
+                    setUser({
+                        id: session.user.id,
+                        email: session.user.email || '',
+                        name: session.user.user_metadata?.full_name || 'Usuario',
+                        role: 'Panel Senior'
+                    } as any);
+                }
             }
         });
 
@@ -143,9 +160,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(true);
         try {
             console.log('[AuthContext] Attempting login for:', email);
-            console.log('[AuthContext] Timeout guard set to 90 seconds...');
 
-            const result = await withAuthTimeout<any>(supabase.auth.signInWithPassword({ email, password }), 15000);
+            // 30 second timeout for production reliability
+            const result = await withAuthTimeout<any>(
+                supabase.auth.signInWithPassword({ email, password }),
+                30000
+            );
 
             if (result.error) {
                 console.error('[AuthContext] Supabase returned error:', result.error.message);

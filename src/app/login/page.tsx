@@ -63,17 +63,31 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
+        console.log('[Login] Starting submission process...');
+
+        // Safety timer to prevent infinite "Iniciando sesión..."
+        const safetyTimer = setTimeout(() => {
+            if (isSubmitting) {
+                setIsSubmitting(false);
+                setError('La conexión está tardando demasiado. Reintenta o usa el botón de "Reparar" abajo.');
+                console.warn('[Login] Safety timeout triggered after 20s');
+            }
+        }, 20000);
 
         try {
-            const { success, error } = await login(email, password);
+            const { success, error: loginError } = await login(email, password);
+            clearTimeout(safetyTimer);
+
             if (success) {
+                console.log('[Login] Success! Navigating to portfolio...');
                 router.push('/portfolio');
             } else {
-                setError(error || 'Credenciales incorrectas. Por favor intenta de nuevo.');
+                setError(loginError || 'Credenciales incorrectas. Por favor intenta de nuevo.');
+                setIsSubmitting(false);
             }
         } catch (err) {
-            setError('Ocurrió un error al intentar iniciar sesión.');
-        } finally {
+            clearTimeout(safetyTimer);
+            setError('Ocurrió un error inesperado. Por favor intenta de nuevo.');
             setIsSubmitting(false);
         }
     };
