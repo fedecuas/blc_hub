@@ -121,6 +121,12 @@ export default function ProjectsPage() {
         });
     };
 
+    const [mounted, setMounted] = useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
     React.useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!resizing) return;
@@ -157,7 +163,7 @@ export default function ProjectsPage() {
         setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    if (!isLoaded) {
+    if (!isLoaded || !mounted) {
         return (
             <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
                 <div className="loader"></div>
@@ -217,12 +223,11 @@ export default function ProjectsPage() {
                 (task.priority && t.label.toLowerCase() === task.priority.toLowerCase())
             )?.label || task.priority || 'Sin prioridad';
 
-            const now = new Date();
             const due = new Date(task.dueDate || '');
-            const isLate = !isNaN(due.getTime()) && (due.getTime() - now.getTime()) < 7 * 24 * 60 * 60 * 1000;
+            const isLate = !isNaN(due.getTime()) && (due.getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
 
             return {
-                id: task.id || `task-${Math.random()}`,
+                id: task.id || `task-${task.projectId}-${task.title.substring(0, 3)}`,
                 item: task.title || 'Sin título',
                 responsible: task.assignee || 'Antigravity',
                 projectId: task.projectId || '',
@@ -1048,9 +1053,9 @@ export default function ProjectsPage() {
                         }}
                     >
                         <span style={{ fontSize: '1.1rem' }}>
-                            {clientPortfolios.find(p => p.id === selectedPortfolio)?.icon}
+                            {clientPortfolios.find(p => p.id === selectedPortfolio)?.icon || '📁'}
                         </span>
-                        <span style={{ fontWeight: 600 }}>{clientPortfolios.find(p => p.id === selectedPortfolio)?.name}</span>
+                        <span style={{ fontWeight: 600 }}>{clientPortfolios.find(p => p.id === selectedPortfolio)?.name || 'Seleccionar...'}</span>
                         <span style={{ fontSize: '0.55rem', opacity: 0.4, marginLeft: '2px' }}>▼</span>
                     </button>
 
