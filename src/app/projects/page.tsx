@@ -121,43 +121,37 @@ export default function ProjectsPage() {
         });
     };
 
-    const [mounted, setMounted] = useState(false);
-
-    React.useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    React.useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!resizing) return;
-            const diff = e.pageX - resizing.startX;
-            setColumnWidths(prev => ({
-                ...prev,
-                [resizing.field]: Math.max(50, resizing.startWidth + diff)
-            }));
-        };
-
-        const handleMouseUp = () => {
-            setResizing(null);
-        };
-
-        if (resizing) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [resizing]);
-
     const colorPalette = [
         '#f85a5a', '#fdab3d', '#99e63e', '#00c875', '#579bfc', '#666666',
         '#c792ea', '#ff8652', '#00c875'
     ];
 
     const responsibles = ['Antigravity', 'User', 'Julian Rossi', 'Federico', 'Elena Vance', 'Marcus Thorne'];
+
+    const [statusTags, setStatusTags] = useState<Tag[]>([
+        { id: 's1', label: 'Activo', color: '#fdab3d' },
+        { id: 's2', label: 'Trabajando en ello', color: '#fdab3d' },
+        { id: 's3', label: 'Esperando revisión', color: '#579bfc' },
+        { id: 's4', label: 'Aprobado', color: '#ff8652' },
+        { id: 's5', label: 'Terminado', color: '#00c875' },
+        { id: 's6', label: 'Entregado', color: '#00c875' },
+        { id: 's7', label: 'REPETIR', color: '#444' },
+        { id: 's8', label: 'Interrumpido', color: '#f85a5a' },
+    ]);
+
+    const [priorityTags, setPriorityTags] = useState<Tag[]>([
+        { id: 'p1', label: 'Alta', color: '#f85a5a' },
+        { id: 'p2', label: 'Media', color: '#fdab3d' },
+        { id: 'p3', label: 'Baja', color: '#99e63e' },
+    ]);
+
+    const [localBoardItems, setLocalBoardItems] = useState<BoardItem[]>([]);
+
+    const [mounted, setMounted] = useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const toggleSection = (section: string) => {
         setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -223,11 +217,11 @@ export default function ProjectsPage() {
                 (task.priority && t.label.toLowerCase() === task.priority.toLowerCase())
             )?.label || task.priority || 'Sin prioridad';
 
-            const due = new Date(task.dueDate || '');
+            const due = new Date(task.dueDate || Date.now());
             const isLate = !isNaN(due.getTime()) && (due.getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
 
             return {
-                id: task.id || `task-${task.projectId}-${task.title.substring(0, 3)}`,
+                id: task.id || `task-${task.projectId}-${(task.title || '').substring(0, 3)}`,
                 item: task.title || 'Sin título',
                 responsible: task.assignee || 'Antigravity',
                 projectId: task.projectId || '',
@@ -236,29 +230,12 @@ export default function ProjectsPage() {
                 status: statusLabel,
                 startDate: task.createdAt?.split('T')[0] || '',
                 deadline: task.dueDate || '',
-                progress: task.completed ? 100 : (task.progress || 0),
+                progress: task.completed ? 100 : ((task as any).progress || 0),
                 weekGroup: isLate ? 'this' : 'next'
             };
         });
 
-    // We'll keep the state for manual additions/edits if needed, but primary data is from context
-    const [localBoardItems, setLocalBoardItems] = useState<BoardItem[]>([]);
     const boardItems = [...tasks, ...localBoardItems];
-
-    const [statusTags, setStatusTags] = useState<Tag[]>([
-        { id: 's1', label: 'Interrumpido', color: '#f85a5a' },
-        { id: 's2', label: 'Trabajando en ello', color: '#fdab3d' },
-        { id: 's3', label: 'Esperando revisión', color: '#579bfc' },
-        { id: 's4', label: 'Aprobado', color: '#ff8652' },
-        { id: 's5', label: 'Listo', color: '#00c875' },
-        { id: 's6', label: 'REPETIR', color: '#444' },
-    ]);
-
-    const [priorityTags, setPriorityTags] = useState<Tag[]>([
-        { id: 'p1', label: 'Alta', color: '#f85a5a' },
-        { id: 'p2', label: 'Media', color: '#fdab3d' },
-        { id: 'p3', label: 'Baja', color: '#99e63e' },
-    ]);
 
     const updateItem = (id: string, field: string, value: string | number | string[] | boolean) => {
         setLocalBoardItems((prev: BoardItem[]) => prev.map((item: BoardItem) =>
