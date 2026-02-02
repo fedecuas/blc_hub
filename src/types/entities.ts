@@ -34,6 +34,7 @@ export interface Project {
     gradient: string;
     icon: string;
     tags?: string[];
+    team?: string[];
     createdAt: string;
     updatedAt: string;
 }

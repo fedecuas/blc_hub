@@ -290,7 +290,7 @@ export default function LoginPage() {
                                 Limpiar Errores y Reintentar
                             </button>
                             <div style={{ marginTop: '0.3rem', opacity: 0.5, fontSize: '0.6rem' }}>
-                                Si "Estado API" es Error de Red, revisa si tienes AdBlock activo.
+                                Si &quot;Estado API&quot; es Error de Red, revisa si tienes AdBlock activo.
                             </div>
                         </div>
                     )}

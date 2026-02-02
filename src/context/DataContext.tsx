@@ -187,6 +187,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     gradient: p.gradient,
                     icon: p.icon,
                     tags: p.tags || [],
+                    team: p.team || [],
                     createdAt: p.created_at,
                     updatedAt: p.updated_at
                 })));
