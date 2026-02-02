@@ -4,6 +4,7 @@ import React, { useState, Suspense } from 'react';
 import styles from './projects.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 import { useDataContext } from '@/context/DataContext';
+import { useRouter } from 'next/navigation';
 import type { Project as ProjectType } from '@/types/entities';
 import ColumnCenter, { ColumnType } from '@/components/ColumnCenter';
 import ColumnMenu from '@/components/ColumnMenu';
@@ -49,7 +50,7 @@ interface BoardItem {
 
 export default function ProjectsPage() {
     const { t } = useLanguage();
-    const router = require('next/navigation').useRouter();
+    const router = useRouter();
     const { portfolios, projects: contextProjects, tasks: contextTasks } = useDataContext();
 
     const [viewMode, setViewMode] = useState<ViewMode>('overview');
@@ -197,8 +198,16 @@ export default function ProjectsPage() {
         .map(task => {
             const proj = contextProjects.find(p => p.id === task.projectId);
             // Map Supabase status/priority to UI labels
-            const statusLabel = statusTags.find(t => t.id === task.status || t.label.toLowerCase() === task.status.toLowerCase())?.label || task.status;
-            const priorityLabel = priorityTags.find(t => t.id === task.priority || t.label.toLowerCase() === task.priority.toLowerCase())?.label || task.priority;
+            // Map Supabase status/priority to UI labels - Safely handle null/undefined
+            const statusLabel = statusTags.find(t =>
+                t.id === task.status ||
+                (task.status && t.label.toLowerCase() === task.status.toLowerCase())
+            )?.label || task.status || 'Sin estado';
+
+            const priorityLabel = priorityTags.find(t =>
+                t.id === task.priority ||
+                (task.priority && t.label.toLowerCase() === task.priority.toLowerCase())
+            )?.label || task.priority || 'Sin prioridad';
 
             return {
                 id: task.id,
