@@ -51,7 +51,7 @@ interface BoardItem {
 export default function ProjectsPage() {
     const { t } = useLanguage();
     const router = useRouter();
-    const { portfolios, projects: contextProjects, tasks: contextTasks } = useDataContext();
+    const { portfolios, projects: contextProjects, tasks: contextTasks, isLoaded } = useDataContext();
 
     const [viewMode, setViewMode] = useState<ViewMode>('overview');
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ this: false, next: false, done: false });
@@ -157,6 +157,14 @@ export default function ProjectsPage() {
         setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
+    if (!isLoaded) {
+        return (
+            <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
+                <div className="loader"></div>
+            </div>
+        );
+    }
+
     // Use projects from DataContext, filter by selected portfolio
     const projects: Project[] = selectedPortfolio === 'all'
         ? contextProjects.map(p => ({
@@ -209,18 +217,22 @@ export default function ProjectsPage() {
                 (task.priority && t.label.toLowerCase() === task.priority.toLowerCase())
             )?.label || task.priority || 'Sin prioridad';
 
+            const now = new Date();
+            const due = new Date(task.dueDate || '');
+            const isLate = !isNaN(due.getTime()) && (due.getTime() - now.getTime()) < 7 * 24 * 60 * 60 * 1000;
+
             return {
-                id: task.id,
-                item: task.title,
+                id: task.id || `task-${Math.random()}`,
+                item: task.title || 'Sin título',
                 responsible: task.assignee || 'Antigravity',
-                projectId: task.projectId,
+                projectId: task.projectId || '',
                 projectName: proj?.name || '?',
                 priority: priorityLabel,
                 status: statusLabel,
                 startDate: task.createdAt?.split('T')[0] || '',
                 deadline: task.dueDate || '',
-                progress: task.completed ? 100 : 0,
-                weekGroup: (new Date(task.dueDate || '').getTime() - new Date().getTime()) < 7 * 24 * 60 * 60 * 1000 ? 'this' : 'next'
+                progress: task.completed ? 100 : (task.progress || 0),
+                weekGroup: isLate ? 'this' : 'next'
             };
         });
 
